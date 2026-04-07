@@ -3,8 +3,16 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index.tsx";
-import NotFound from "./pages/NotFound.tsx";
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
+import DoctorListing from "./pages/DoctorListing";
+import DoctorProfile from "./pages/DoctorProfile";
+import LoginPage from "./pages/LoginPage";
+import BookingPage from "./pages/BookingPage";
+import ConsultationPage from "./pages/ConsultationPage";
+import PaymentPage from "./pages/PaymentPage";
+import PrescriptionPage from "./pages/PrescriptionPage";
+import DoctorDashboard from "./pages/DoctorDashboard";
 
 const queryClient = new QueryClient();
 
@@ -16,7 +24,14 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/doctors" element={<DoctorListing />} />
+          <Route path="/doctor/:id" element={<DoctorProfile />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/booking/:id" element={<BookingPage />} />
+          <Route path="/consultation" element={<ConsultationPage />} />
+          <Route path="/payment" element={<PaymentPage />} />
+          <Route path="/prescriptions" element={<PrescriptionPage />} />
+          <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
