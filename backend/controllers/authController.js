@@ -7,50 +7,64 @@ const generateToken = (id, role) => {
   });
 };
 
-// @desc    Send OTP to phone number
-// @route   POST /api/auth/send-otp
+// @desc    Register a new user
+// @route   POST /api/auth/register
 // @access  Public
-const sendOtp = async (req, res) => {
-  const { phone } = req.body;
-  if (!phone) {
-    return res.status(400).json({ message: 'Phone number is required' });
+const registerUser = async (req, res) => {
+  const { name, email, password, role, phone } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: 'Please add all required fields' });
   }
 
-  // Mock OTP generation
-  const otp = '123456'; 
-  console.log(`Sending Mock OTP ${otp} to phone ${phone}`);
+  // Check if user exists
+  const userExists = await User.findOne({ email });
 
-  res.status(200).json({ message: 'OTP sent successfully', mockOtp: otp });
+  if (userExists) {
+    return res.status(400).json({ message: 'User already exists' });
+  }
+
+  // Create user
+  const user = await User.create({
+    name,
+    email,
+    password,
+    role: role || 'patient',
+    phone
+  });
+
+  if (user) {
+    res.status(201).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      token: generateToken(user._id, user.role),
+    });
+  } else {
+    res.status(400).json({ message: 'Invalid user data' });
+  }
 };
 
-// @desc    Verify OTP and Login / Register
-// @route   POST /api/auth/verify-otp
+// @desc    Authenticate a user
+// @route   POST /api/auth/login
 // @access  Public
-const verifyOtp = async (req, res) => {
-  const { phone, otp, role, name } = req.body; // role & name useful for first-time registration
+const authUser = async (req, res) => {
+  const { email, password } = req.body;
 
-  if (otp !== '123456') {
-    return res.status(400).json({ message: 'Invalid OTP' });
-  }
+  const user = await User.findOne({ email });
 
-  let user = await User.findOne({ phone });
-
-  if (!user) {
-    // Register new user
-    user = await User.create({
-      phone,
-      role: role || 'patient',
-      name: name || `User ${phone.slice(-4)}`
+  if (user && (await user.matchPassword(password))) {
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      token: generateToken(user._id, user.role),
     });
+  } else {
+    res.status(401).json({ message: 'Invalid email or password' });
   }
-
-  res.json({
-    _id: user._id,
-    name: user.name,
-    phone: user.phone,
-    role: user.role,
-    token: generateToken(user._id, user.role),
-  });
 };
 
 // @desc    Get user profile
@@ -66,7 +80,7 @@ const getMe = async (req, res) => {
 };
 
 module.exports = {
-  sendOtp,
-  verifyOtp,
+  registerUser,
+  authUser,
   getMe
 };

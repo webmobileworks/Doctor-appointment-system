@@ -28,7 +28,7 @@ const ConsultationPage = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    const newSocket = io("http://localhost:5000");
+    const newSocket = io("http://localhost:5052");
     setSocket(newSocket);
 
     newSocket.emit("join_consultation", "test-room-1");
@@ -49,10 +49,10 @@ const ConsultationPage = () => {
   const sendMessage = () => {
     if (!input.trim() || !socket) return;
     const newMsg: Message = { id: Date.now().toString(), text: input, sender: "patient", time: new Date().toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit" }) };
-    
+
     setMessages((prev) => [...prev, newMsg]);
     setInput("");
-    
+
     socket.emit("send_message", { consultationId: "test-room-1", ...newMsg });
   };
 
@@ -105,11 +105,10 @@ const ConsultationPage = () => {
           {messages.map((msg) => (
             <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
               className={`flex ${msg.sender === "patient" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[80%] p-3.5 rounded-2xl ${
-                msg.sender === "patient"
-                  ? "gradient-primary text-primary-foreground rounded-br-md"
-                  : "bg-card border border-border rounded-bl-md"
-              }`}>
+              <div className={`max-w-[80%] p-3.5 rounded-2xl ${msg.sender === "patient"
+                ? "gradient-primary text-primary-foreground rounded-br-md"
+                : "bg-card border border-border rounded-bl-md"
+                }`}>
                 <p className="text-sm">{msg.text}</p>
                 <p className={`text-xs mt-1 ${msg.sender === "patient" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{msg.time}</p>
               </div>

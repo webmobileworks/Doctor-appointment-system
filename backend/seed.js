@@ -6,7 +6,8 @@ dotenv.config();
 
 const doctors = [
   {
-    phone: '9999999991',
+    email: 'sarah.johnson@medibook.com',
+    password: 'password123',
     role: 'doctor',
     name: 'Dr. Sarah Johnson',
     doctorDetails: {
@@ -25,7 +26,8 @@ const doctors = [
     }
   },
   {
-    phone: '9999999992',
+    email: 'rajesh.kumar@medibook.com',
+    password: 'password123',
     role: 'doctor',
     name: 'Dr. Rajesh Kumar',
     doctorDetails: {
@@ -48,9 +50,17 @@ const doctors = [
 mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
     console.log('Connected to MongoDB. Seeding data...');
-    await User.deleteMany({ role: 'doctor' });
-    await User.insertMany(doctors);
-    console.log('Data seeded!');
+    try {
+      await mongoose.connection.collection('users').drop();
+    } catch (e) {
+      console.log('No existing collection to drop');
+    }
+    
+    for (const doc of doctors) {
+      await User.create(doc);
+    }
+    
+    console.log('Data seeded successfully!');
     process.exit();
   })
   .catch((err) => {
