@@ -5,7 +5,6 @@ import { Star, MapPin, Clock, GraduationCap, Languages, IndianRupee, Calendar, A
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import { reviews } from "@/data/mockData";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
 
@@ -36,6 +35,16 @@ const DoctorProfile = () => {
       };
     }
   });
+
+  const { data: reviewsData = [] } = useQuery({
+    queryKey: ['doctor-reviews', id],
+    queryFn: async () => {
+      const res = await api.get(`/doctors/${id}/reviews`);
+      return res.data;
+    },
+    enabled: !!id
+  });
+
   const [activeTab, setActiveTab] = useState("Overview");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
@@ -141,21 +150,27 @@ const DoctorProfile = () => {
 
             {activeTab === "Reviews" && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                {reviews.map((review) => (
-                  <div key={review.id} className="glass-card p-5">
+                {reviewsData.length === 0 ? (
+                  <div className="glass-card p-6 text-center text-muted-foreground">No reviews yet for this doctor.</div>
+                ) : reviewsData.map((rev: any) => (
+                  <div key={rev._id} className="glass-card p-5">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">{review.userName[0]}</div>
-                        <span className="font-medium text-sm">{review.userName}</span>
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+                          {rev.patient?.name ? rev.patient.name[0].toUpperCase() : 'U'}
+                        </div>
+                        <span className="font-medium text-sm">{rev.patient?.name || 'Anonymous User'}</span>
                       </div>
-                      <span className="text-xs text-muted-foreground">{review.date}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(rev.createdAt || rev.date).toLocaleDateString()}
+                      </span>
                     </div>
                     <div className="flex gap-0.5 mb-2">
                       {Array.from({ length: 5 }).map((_, i) => (
-                        <Star key={i} className={`w-3.5 h-3.5 ${i < review.rating ? "text-warning fill-warning" : "text-muted"}`} />
+                        <Star key={i} className={`w-3.5 h-3.5 ${i < rev.rating ? "text-warning fill-warning" : "text-muted"}`} />
                       ))}
                     </div>
-                    <p className="text-sm text-muted-foreground">{review.comment}</p>
+                    <p className="text-sm text-muted-foreground">{rev.comment}</p>
                   </div>
                 ))}
               </motion.div>

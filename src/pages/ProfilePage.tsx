@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { User, Phone, Mail, Calendar, Droplets, Edit2, Save, X, Shield, Clock, FileText } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { User, Phone, Mail, Calendar, Droplets, Edit2, Save, X, Shield, Clock, FileText, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,12 +10,18 @@ import { toast } from "sonner";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Review State
+  const [reviewModal, setReviewModal] = useState<string | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
   const [user, setUser] = useState<any>(null);
   const [form, setForm] = useState({
     name: "",
@@ -98,6 +104,30 @@ const ProfilePage = () => {
 
   const handleSave = () => {
     updateMutation.mutate(form);
+  };
+
+  const reviewMutation = useMutation({
+    mutationFn: async ({ id, rating, comment }: any) => {
+      const res = await api.post(`/appointments/${id}/review`, { rating, comment });
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success("Review submitted successfully!");
+      setReviewModal(null);
+      setReviewComment("");
+      queryClient.invalidateQueries({ queryKey: ['my-appointments'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "Failed to submit review");
+    }
+  });
+
+  const submitReview = (id: string) => {
+    if (!reviewRating) {
+      toast.error("Please provide a rating");
+      return;
+    }
+    reviewMutation.mutate({ id, rating: reviewRating, comment: reviewComment });
   };
 
   if (!user) return null;
@@ -227,27 +257,100 @@ const ProfilePage = () => {
               <p className="text-sm text-muted-foreground">You have no upcoming appointments.</p>
             ) : (
               appointments.map((apt: any) => (
-                <div key={apt._id} className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-muted/10 hover:bg-muted/30 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <Avatar className="w-12 h-12 hidden sm:block">
-                      <AvatarImage src={apt.doctor?.doctorDetails?.image || ""} />
-                      <AvatarFallback className="bg-primary/10 text-primary">{apt.doctor?.name ? apt.doctor.name.split(" ")[1]?.[0] : "D"}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-semibold">{apt.doctor?.name || 'Unknown Doctor'}</p>
-                      <p className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
-                        <Calendar className="w-3 h-3" /> {apt.date} • {apt.time}
-                      </p>
+                <div key={apt._id} className="mb-4">
+                  <div className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-muted/10 hover:bg-muted/30 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="w-12 h-12 hidden sm:block">
+                        <AvatarImage src={apt.doctor?.doctorDetails?.image || ""} />
+                        <AvatarFallback className="bg-primary/10 text-primary">{apt.doctor?.name ? apt.doctor.name.split(" ")[1]?.[0] : "D"}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-semibold">{apt.doctor?.name || 'Unknown Doctor'}</p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
+                          <Calendar className="w-3 h-3" /> {apt.date} • {apt.time}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <Badge variant="outline" className={`capitalize ${
+                        apt.status === "completed" ? "bg-primary/10 text-primary border-primary/20" :
+                        apt.status === "confirmed" ? "bg-success/10 text-success border-success/20" : 
+                        apt.status === "pending" ? "bg-warning/10 text-warning border-warning/20" : ""
+                      }`}>
+                        {apt.status}
+                      </Badge>
+                      {apt.status === "completed" && !apt.review?.rating && (
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="text-xs h-7 text-primary mt-1"
+                          onClick={() => {
+                            setReviewModal(reviewModal === apt._id ? null : apt._id);
+                            setReviewRating(5);
+                            setReviewComment("");
+                          }}
+                        >
+                          <Star className="w-3 h-3 mr-1" /> Leave Review
+                        </Button>
+                      )}
+                      {apt.review?.rating && (
+                        <div className="flex items-center text-warning mt-1">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star key={i} className={`w-3 h-3 ${i < apt.review.rating ? "fill-warning" : "text-muted"}`} />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <Badge variant="outline" className={`capitalize ${
-                      apt.status === "confirmed" ? "bg-success/10 text-success border-success/20" : 
-                      apt.status === "pending" ? "bg-warning/10 text-warning border-warning/20" : ""
-                    }`}>
-                      {apt.status}
-                    </Badge>
-                  </div>
+                  
+                  <AnimatePresence>
+                    {reviewModal === apt._id && (
+                      <motion.div 
+                        initial={{ height: 0, opacity: 0 }} 
+                        animate={{ height: "auto", opacity: 1 }} 
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="mt-4 pt-4 border-t border-border/50">
+                          <p className="text-sm font-medium mb-3">Rate your experience</p>
+                          <div className="flex items-center gap-1 mb-4">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                type="button"
+                                onClick={() => setReviewRating(star)}
+                                className="focus:outline-none transition-transform hover:scale-110"
+                              >
+                                <Star className={`w-8 h-8 ${reviewRating >= star ? "fill-warning text-warning" : "text-muted-foreground/30"}`} />
+                              </button>
+                            ))}
+                          </div>
+                          <Input 
+                            placeholder="Share your experience (optional)" 
+                            value={reviewComment}
+                            onChange={(e) => setReviewComment(e.target.value)}
+                            className="rounded-xl h-11 mb-3"
+                          />
+                          <div className="flex gap-2">
+                            <Button 
+                              className="rounded-xl gradient-primary border-0 text-primary-foreground h-11 flex-1"
+                              onClick={() => submitReview(apt._id)}
+                              disabled={reviewMutation.isPending}
+                            >
+                              {reviewMutation.isPending ? "Submitting..." : "Submit Review"}
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              className="rounded-xl h-11"
+                              onClick={() => setReviewModal(null)}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               ))
             )}

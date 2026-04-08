@@ -38,7 +38,6 @@ const appointmentSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  symptoms: String,
   prescriptionFile: String // URL or path to uploaded PDF prescription
 }, { timestamps: true });
 

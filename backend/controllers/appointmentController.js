@@ -45,8 +45,20 @@ const getAppointments = async (req, res) => {
 
     const appointments = await Appointment.find(query)
       .populate('patient', 'name phone gender')
-      .populate('doctor', 'name doctorDetails.specialty doctorDetails.image');
+      .populate('doctor', 'name doctorDetails.specialty doctorDetails.image')
+      .lean();
     
+    // Attach standalone reviews dynamically
+    const Review = require('../models/Review');
+    const reviews = await Review.find({ [req.user.role === 'doctor' ? 'doctor' : 'patient']: req.user.id });
+    
+    appointments.forEach(apt => {
+      const review = reviews.find(r => r.appointment.toString() === apt._id.toString());
+      if (review) {
+        apt.review = review;
+      }
+    });
+
     res.json(appointments);
   } catch (error) {
     res.status(500).json({ message: 'Server Error' });
@@ -104,9 +116,60 @@ const uploadPrescription = async (req, res) => {
   }
 };
 
+// @desc    Add review to completed appointment
+// @route   POST /api/appointments/:id/review
+// @access  Private (Patient only)
+const addReview = async (req, res) => {
+  try {
+    const { rating, comment } = req.body;
+    const appointment = await Appointment.findById(req.params.id);
+
+    if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
+    
+    if (appointment.patient.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    if (appointment.status !== 'completed') {
+      return res.status(400).json({ message: 'Can only review completed appointments' });
+    }
+
+    const Review = require('../models/Review');
+    const existingReview = await Review.findOne({ appointment: req.params.id });
+
+    if (existingReview) {
+      return res.status(400).json({ message: 'Already reviewed' });
+    }
+
+    const newReview = await Review.create({
+      appointment: appointment._id,
+      doctor: appointment.doctor,
+      patient: appointment.patient,
+      rating: Number(rating),
+      comment
+    });
+
+    // Recalculate doctor's aggregate rating using independent schema
+    const reviewedAppts = await Review.find({ doctor: appointment.doctor });
+
+    const totalRatings = reviewedAppts.reduce((acc, curr) => acc + curr.rating, 0);
+    const avgRating = totalRatings / reviewedAppts.length;
+
+    await User.findByIdAndUpdate(appointment.doctor, {
+      'doctorDetails.rating': Number(avgRating.toFixed(1)),
+      'doctorDetails.reviewCount': reviewedAppts.length
+    });
+
+    res.json(newReview);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
 module.exports = {
   createAppointment,
   getAppointments,
   updateAppointmentStatus,
-  uploadPrescription
+  uploadPrescription,
+  addReview
 };

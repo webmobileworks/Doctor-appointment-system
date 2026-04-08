@@ -64,8 +64,25 @@ const updateDoctorProfile = async (req, res) => {
   }
 }
 
+// @desc    Get reviews for a specific doctor
+// @route   GET /api/doctors/:id/reviews
+// @access  Public
+const getDoctorReviews = async (req, res) => {
+  const Review = require('../models/Review');
+  try {
+    const reviews = await Review.find({ doctor: req.params.id })
+      .populate('patient', 'name')
+      .sort({ createdAt: -1 }); // Sort by newest first
+
+    res.json(reviews);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
 module.exports = {
   getDoctors,
   getDoctorById,
-  updateDoctorProfile
+  updateDoctorProfile,
+  getDoctorReviews
 };
