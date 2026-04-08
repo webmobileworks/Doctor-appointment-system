@@ -70,14 +70,14 @@ const ProfilePage = () => {
       <Navbar />
 
       {/* Hero Header */}
-      <div className="gradient-primary py-16">
+      <div className="gradient-primary py-10 sm:py-16">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col sm:flex-row items-center gap-6"
+            className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6"
           >
-            <Avatar className="w-24 h-24 border-4 border-primary-foreground/30 shadow-xl">
+            <Avatar className="w-20 h-20 sm:w-24 sm:h-24 border-4 border-primary-foreground/30 shadow-xl">
               <AvatarImage src="" />
               <AvatarFallback className="text-2xl font-bold bg-primary-foreground/20 text-primary-foreground">
                 {initials}
@@ -153,7 +153,7 @@ const ProfilePage = () => {
           <Separator className="my-8" />
 
           <h2 className="text-lg font-semibold text-foreground mb-4">Quick Actions</h2>
-          <div className="grid sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Button variant="outline" className="rounded-xl h-12 justify-start gap-3" onClick={() => navigate("/doctors")}>
               <Calendar className="w-4 h-4 text-primary" /> Book Appointment
             </Button>
