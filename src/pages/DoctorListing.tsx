@@ -7,7 +7,9 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import DoctorCard from "@/components/doctors/DoctorCard";
 import EmptyState from "@/components/shared/EmptyState";
-import { doctors, specialties } from "@/data/mockData";
+import { specialties } from "@/data/mockData";
+import { useQuery } from "@tanstack/react-query";
+import api from "@/lib/api";
 
 const DoctorListing = () => {
   const [layout, setLayout] = useState<"grid" | "list">("grid");
@@ -15,10 +17,29 @@ const DoctorListing = () => {
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
-  const filtered = doctors.filter((d) => {
-    const matchSearch = !search || d.name.toLowerCase().includes(search.toLowerCase()) || d.specialty.toLowerCase().includes(search.toLowerCase());
-    const matchSpecialty = !selectedSpecialty || d.specialty === selectedSpecialty;
-    return matchSearch && matchSpecialty;
+  const { data: filtered = [], isLoading } = useQuery({
+    queryKey: ['doctors', search, selectedSpecialty],
+    queryFn: async () => {
+      const res = await api.get('/doctors', {
+        params: { search, specialty: selectedSpecialty }
+      });
+      return res.data.map((doc: any) => ({
+        id: doc._id,
+        name: doc.name,
+        specialty: doc.doctorDetails?.specialty || '',
+        experience: doc.doctorDetails?.experience || 0,
+        rating: doc.doctorDetails?.rating || 0,
+        reviewCount: doc.doctorDetails?.reviewCount || 0,
+        fees: doc.doctorDetails?.fees || 0,
+        location: doc.doctorDetails?.location || '',
+        image: doc.doctorDetails?.image || '',
+        qualification: doc.doctorDetails?.qualification || '',
+        about: doc.doctorDetails?.about || '',
+        languages: doc.doctorDetails?.languages || [],
+        availableSlots: doc.doctorDetails?.availableSlots || [],
+        nextAvailable: doc.doctorDetails?.nextAvailable || ''
+      }));
+    }
   });
 
   return (
@@ -94,11 +115,13 @@ const DoctorListing = () => {
         {/* Results */}
         <p className="text-sm text-muted-foreground mb-4">{filtered.length} doctors found</p>
 
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          <p className="text-center py-10 text-muted-foreground">Loading doctors...</p>
+        ) : filtered.length === 0 ? (
           <EmptyState icon="search" title="No doctors found" description="Try adjusting your search or filters to find what you're looking for." />
         ) : (
           <div className={layout === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" : "space-y-4"}>
-            {filtered.map((doctor, i) => (
+            {filtered.map((doctor: any, i: number) => (
               <DoctorCard key={doctor.id} doctor={doctor} index={i} layout={layout} />
             ))}
           </div>

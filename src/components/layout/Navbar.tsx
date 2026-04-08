@@ -14,6 +14,14 @@ const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
 
+  const userInfoStr = localStorage.getItem('userInfo');
+  const user = userInfoStr ? JSON.parse(userInfoStr) : null;
+
+  const handleLogout = () => {
+    localStorage.removeItem('userInfo');
+    window.location.href = '/login';
+  };
+
   return (
     <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border/50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -48,17 +56,29 @@ const Navbar = () => {
             <Bell className="w-4 h-4" />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-destructive" />
           </Button>
-          <Link to="/login">
-            <Button variant="outline" size="sm" className="rounded-xl gap-2">
-              <User className="w-4 h-4" />
-              Login
-            </Button>
-          </Link>
-          <Link to="/doctor-dashboard">
-            <Button size="sm" className="rounded-xl gradient-primary border-0 text-primary-foreground">
-              Doctor Portal
-            </Button>
-          </Link>
+          {user ? (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-primary/10">
+                <User className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium text-primary">{user.name}</span>
+              </div>
+              <Button variant="ghost" size="sm" onClick={handleLogout} className="rounded-xl">Logout</Button>
+            </div>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="outline" size="sm" className="rounded-xl gap-2">
+                  <User className="w-4 h-4" />
+                  Login
+                </Button>
+              </Link>
+              <Link to="/doctor-dashboard">
+                <Button size="sm" className="rounded-xl gradient-primary border-0 text-primary-foreground">
+                  Doctor Portal
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
 
         <button className="md:hidden p-2" onClick={() => setMobileOpen(!mobileOpen)}>
@@ -89,14 +109,24 @@ const Navbar = () => {
                   {link.label}
                 </Link>
               ))}
-              <div className="flex gap-2 pt-2">
-                <Link to="/login" className="flex-1" onClick={() => setMobileOpen(false)}>
-                  <Button variant="outline" className="w-full rounded-xl">Login</Button>
-                </Link>
-                <Link to="/doctor-dashboard" className="flex-1" onClick={() => setMobileOpen(false)}>
-                  <Button className="w-full rounded-xl gradient-primary border-0 text-primary-foreground">Doctor</Button>
-                </Link>
-              </div>
+              {user ? (
+                <div className="flex flex-col gap-2 pt-2 border-t border-border/50">
+                  <div className="flex items-center gap-2 px-4 py-3 bg-muted/50 rounded-xl">
+                    <User className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium">{user.name}</span>
+                  </div>
+                  <Button variant="outline" onClick={handleLogout} className="w-full rounded-xl">Logout</Button>
+                </div>
+              ) : (
+                <div className="flex gap-2 pt-2">
+                  <Link to="/login" className="flex-1" onClick={() => setMobileOpen(false)}>
+                    <Button variant="outline" className="w-full rounded-xl">Login</Button>
+                  </Link>
+                  <Link to="/doctor-dashboard" className="flex-1" onClick={() => setMobileOpen(false)}>
+                    <Button className="w-full rounded-xl gradient-primary border-0 text-primary-foreground">Doctor</Button>
+                  </Link>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

@@ -6,15 +6,46 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Navbar from "@/components/layout/Navbar";
-import { doctors } from "@/data/mockData";
 import { toast } from "sonner";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import api from "@/lib/api";
 
 const BookingPage = () => {
   const { id } = useParams();
-  const doctor = doctors.find((d) => d.id === id) || doctors[0];
+  
+  const { data: doctor, isLoading } = useQuery({
+    queryKey: ['doctor', id],
+    queryFn: async () => {
+      const res = await api.get(`/doctors/${id}`);
+      const doc = res.data;
+      return {
+        id: doc._id,
+        name: doc.name,
+        specialty: doc.doctorDetails?.specialty || '',
+        fees: doc.doctorDetails?.fees || 0,
+        availableSlots: doc.doctorDetails?.availableSlots || []
+      };
+    }
+  });
   const [step, setStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [patientName, setPatientName] = useState("");
+  const [patientPhone, setPatientPhone] = useState("");
+  const [patientSymptoms, setPatientSymptoms] = useState("");
+
+  const bookMutation = useMutation({
+    mutationFn: async (bookingData: any) => {
+      return api.post('/appointments', bookingData);
+    },
+    onSuccess: () => {
+      setStep(3);
+      toast.success("Appointment booked successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to book appointment. Are you logged in?");
+    }
+  });
 
   const dates = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
@@ -23,9 +54,17 @@ const BookingPage = () => {
   });
 
   const handleConfirm = () => {
-    setStep(3);
-    toast.success("Appointment booked successfully!");
+    bookMutation.mutate({
+      doctorId: id,
+      date: selectedDate,
+      time: selectedSlot,
+      type: "In-person",
+      symptoms: patientSymptoms,
+      amount: doctor?.fees
+    });
   };
+
+  if (isLoading || !doctor) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
 
   if (step === 3) {
     return (
@@ -143,15 +182,15 @@ const BookingPage = () => {
               <h3 className="font-semibold">Patient Details</h3>
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Patient Name" className="pl-11 h-11 rounded-xl" />
+                <Input placeholder="Patient Name" value={patientName} onChange={(e) => setPatientName(e.target.value)} className="pl-11 h-11 rounded-xl" />
               </div>
               <div className="relative">
                 <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Phone Number" className="pl-11 h-11 rounded-xl" />
+                <Input placeholder="Phone Number" value={patientPhone} onChange={(e) => setPatientPhone(e.target.value)} className="pl-11 h-11 rounded-xl" />
               </div>
               <div className="relative">
                 <FileText className="absolute left-4 top-3 w-4 h-4 text-muted-foreground" />
-                <Textarea placeholder="Reason for visit (optional)" className="pl-11 rounded-xl min-h-[80px]" />
+                <Textarea placeholder="Reason for visit (optional)" value={patientSymptoms} onChange={(e) => setPatientSymptoms(e.target.value)} className="pl-11 rounded-xl min-h-[80px]" />
               </div>
             </div>
 
@@ -172,7 +211,9 @@ const BookingPage = () => {
 
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => setStep(1)} className="flex-1 h-12 rounded-xl">Back</Button>
-              <Button onClick={handleConfirm} className="flex-1 h-12 rounded-xl gradient-primary border-0 text-primary-foreground">Confirm Booking</Button>
+              <Button onClick={handleConfirm} disabled={bookMutation.isPending} className="flex-1 h-12 rounded-xl gradient-primary border-0 text-primary-foreground">
+                {bookMutation.isPending ? "Booking..." : "Confirm Booking"}
+              </Button>
             </div>
           </motion.div>
         )}

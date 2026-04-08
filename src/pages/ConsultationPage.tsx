@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { io, Socket } from "socket.io-client";
 import { motion } from "framer-motion";
 import { Send, Video, Phone, Paperclip, Smile, MoreVertical, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,20 +25,35 @@ const ConsultationPage = () => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isVideoCall, setIsVideoCall] = useState(false);
+  const [socket, setSocket] = useState<Socket | null>(null);
+
+  useEffect(() => {
+    const newSocket = io("http://localhost:5000");
+    setSocket(newSocket);
+
+    newSocket.emit("join_consultation", "test-room-1");
+
+    newSocket.on("receive_message", (data: Message) => {
+      setMessages((prev) => {
+        // Prevent duplicate messages if sender is us
+        if (prev.find(m => m.id === data.id)) return prev;
+        return [...prev, data];
+      });
+    });
+
+    return () => {
+      newSocket.disconnect();
+    };
+  }, []);
 
   const sendMessage = () => {
-    if (!input.trim()) return;
+    if (!input.trim() || !socket) return;
     const newMsg: Message = { id: Date.now().toString(), text: input, sender: "patient", time: new Date().toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit" }) };
-    setMessages([...messages, newMsg]);
+    
+    setMessages((prev) => [...prev, newMsg]);
     setInput("");
-    setTimeout(() => {
-      setMessages((prev) => [...prev, {
-        id: (Date.now() + 1).toString(),
-        text: "Thank you for sharing that. Let me review and get back to you shortly.",
-        sender: "doctor",
-        time: new Date().toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit" }),
-      }]);
-    }, 2000);
+    
+    socket.emit("send_message", { consultationId: "test-room-1", ...newMsg });
   };
 
   return (

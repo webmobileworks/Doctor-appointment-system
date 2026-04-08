@@ -3,20 +3,30 @@ import { motion } from "framer-motion";
 import { Phone, Lock, ArrowRight, User, Mail, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import api from "@/lib/api";
 
 const LoginPage = () => {
   const [isSignup, setIsSignup] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [phone, setPhone] = useState("");
+  const [name, setName] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSendOtp = () => {
+  const handleSendOtp = async () => {
     if (phone.length >= 10) {
-      setShowOtp(true);
-      toast.success("OTP sent to your mobile number!");
+      try {
+        await api.post('/auth/send-otp', { phone });
+        setShowOtp(true);
+        toast.success("OTP sent! (Use 123456)");
+      } catch (error) {
+        toast.error("Failed to send OTP");
+      }
+    } else {
+      toast.error("Enter a valid mobile number");
     }
   };
 
@@ -32,8 +42,21 @@ const LoginPage = () => {
     }
   };
 
-  const handleVerifyOtp = () => {
-    toast.success("Login successful! Redirecting...");
+  const handleVerifyOtp = async () => {
+    try {
+      const otpString = otp.join('');
+      const res = await api.post('/auth/verify-otp', { 
+        phone, 
+        otp: otpString,
+        role: 'patient',
+        name
+      });
+      localStorage.setItem('userInfo', JSON.stringify(res.data));
+      toast.success("Login successful!");
+      navigate('/doctors');
+    } catch (error) {
+      toast.error("Invalid OTP or server error");
+    }
   };
 
   return (
@@ -69,7 +92,7 @@ const LoginPage = () => {
                 <>
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input placeholder="Full Name" className="pl-11 h-12 rounded-xl" />
+                    <Input placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} className="pl-11 h-12 rounded-xl" />
                   </div>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />

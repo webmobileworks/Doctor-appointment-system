@@ -5,13 +5,37 @@ import { Star, MapPin, Clock, GraduationCap, Languages, IndianRupee, Calendar, A
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import { doctors, reviews } from "@/data/mockData";
+import { reviews } from "@/data/mockData";
+import { useQuery } from "@tanstack/react-query";
+import api from "@/lib/api";
 
 const tabs = ["Overview", "Reviews", "Availability"];
 
 const DoctorProfile = () => {
   const { id } = useParams();
-  const doctor = doctors.find((d) => d.id === id) || doctors[0];
+  const { data: doctor, isLoading } = useQuery({
+    queryKey: ['doctor', id],
+    queryFn: async () => {
+      const res = await api.get(`/doctors/${id}`);
+      const doc = res.data;
+      return {
+        id: doc._id,
+        name: doc.name,
+        specialty: doc.doctorDetails?.specialty || '',
+        experience: doc.doctorDetails?.experience || 0,
+        rating: doc.doctorDetails?.rating || 0,
+        reviewCount: doc.doctorDetails?.reviewCount || 0,
+        fees: doc.doctorDetails?.fees || 0,
+        location: doc.doctorDetails?.location || '',
+        image: doc.doctorDetails?.image || '',
+        qualification: doc.doctorDetails?.qualification || '',
+        about: doc.doctorDetails?.about || '',
+        languages: doc.doctorDetails?.languages || [],
+        availableSlots: doc.doctorDetails?.availableSlots || [],
+        nextAvailable: doc.doctorDetails?.nextAvailable || ''
+      };
+    }
+  });
   const [activeTab, setActiveTab] = useState("Overview");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
@@ -22,7 +46,15 @@ const DoctorProfile = () => {
     return { date: d.toISOString().split("T")[0], day: d.toLocaleDateString("en", { weekday: "short" }), num: d.getDate(), month: d.toLocaleDateString("en", { month: "short" }) };
   });
 
-  const initials = doctor.name.split(" ").slice(1).map(n => n[0]).join("");
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading profile...</div>;
+  }
+
+  if (!doctor) {
+    return <div className="min-h-screen flex items-center justify-center">Doctor not found.</div>;
+  }
+
+  const initials = doctor.name.split(" ").slice(1).map((n: string) => n[0]).join("") || "DR";
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
