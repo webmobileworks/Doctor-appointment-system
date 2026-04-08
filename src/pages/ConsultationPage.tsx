@@ -117,17 +117,17 @@ const ConsultationPage = () => {
         </div>
 
         {/* Input */}
-        <div className="glass-card p-3 flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="rounded-xl shrink-0"><Paperclip className="w-4 h-4" /></Button>
-          <Button variant="ghost" size="icon" className="rounded-xl shrink-0"><Smile className="w-4 h-4" /></Button>
+        <div className="glass-card p-2 sm:p-3 flex items-center gap-1.5 sm:gap-2">
+          <Button variant="ghost" size="icon" className="rounded-xl shrink-0 h-9 w-9 sm:h-10 sm:w-10 hidden sm:flex"><Paperclip className="w-4 h-4" /></Button>
+          <Button variant="ghost" size="icon" className="rounded-xl shrink-0 h-9 w-9 sm:h-10 sm:w-10"><Smile className="w-4 h-4" /></Button>
           <Input
             placeholder="Type a message..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-            className="rounded-xl border-0 bg-muted/50"
+            className="rounded-xl border-0 bg-muted/50 h-10 text-sm"
           />
-          <Button size="icon" onClick={sendMessage} className="rounded-xl gradient-primary border-0 text-primary-foreground shrink-0">
+          <Button size="icon" onClick={sendMessage} className="rounded-xl gradient-primary border-0 text-primary-foreground shrink-0 h-9 w-9 sm:h-10 sm:w-10">
             <Send className="w-4 h-4" />
           </Button>
         </div>
