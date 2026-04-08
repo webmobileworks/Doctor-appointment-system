@@ -144,10 +144,10 @@ const BookingPage = () => {
 
             <div className="glass-card p-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2"><Calendar className="w-4 h-4" /> Select Date</h3>
-              <div className="grid grid-cols-7 gap-2">
+              <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory scrollbar-hide">
                 {dates.map((d) => (
                   <button key={d.date} onClick={() => { setSelectedDate(d.date); setSelectedSlot(null); }}
-                    className={`p-3 rounded-xl text-center transition-all ${selectedDate === d.date ? "gradient-primary text-primary-foreground" : "bg-muted/50 hover:bg-muted"}`}>
+                    className={`flex-shrink-0 w-[60px] p-3 rounded-xl text-center transition-all snap-center ${selectedDate === d.date ? "gradient-primary text-primary-foreground" : "bg-muted/50 hover:bg-muted"}`}>
                     <p className="text-xs opacity-80">{d.day}</p>
                     <p className="text-lg font-bold">{d.num}</p>
                   </button>

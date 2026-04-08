@@ -30,35 +30,37 @@ const Index = () => {
 
       {/* Hero */}
       <section className="relative overflow-hidden gradient-hero">
-        <div className="container mx-auto px-4 py-16 md:py-24">
+        <div className="container mx-auto px-4 py-10 sm:py-16 md:py-24">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
               <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
                 #1 Doctor Appointment Platform
               </span>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-4 sm:mb-6">
                 Find & Book <span className="text-gradient">Top Doctors</span> Near You
               </h1>
-              <p className="text-lg text-muted-foreground mb-8 max-w-lg">
+              <p className="text-base sm:text-lg text-muted-foreground mb-6 sm:mb-8 max-w-lg">
                 Book appointments with verified doctors, get online consultations, and manage your health — all in one place.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-3 mb-8">
-                <div className="relative flex-1">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search doctors, specialties..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-11 h-12 rounded-xl border-border/50 bg-card/80 backdrop-blur-sm"
-                  />
+              <div className="flex flex-col gap-3 mb-6 sm:mb-8">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search doctors, specialties..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-11 h-12 rounded-xl border-border/50 bg-card/80 backdrop-blur-sm"
+                    />
+                  </div>
+                  <div className="relative flex-1 sm:max-w-[200px]">
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input placeholder="Location" className="pl-11 h-12 rounded-xl border-border/50 bg-card/80 backdrop-blur-sm" />
+                  </div>
                 </div>
-                <div className="relative flex-1 sm:max-w-[200px]">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input placeholder="Location" className="pl-11 h-12 rounded-xl border-border/50 bg-card/80 backdrop-blur-sm" />
-                </div>
-                <Link to="/doctors">
-                  <Button className="h-12 px-6 rounded-xl gradient-primary border-0 text-primary-foreground">
+                <Link to="/doctors" className="w-full sm:w-auto">
+                  <Button className="w-full sm:w-auto h-12 px-6 rounded-xl gradient-primary border-0 text-primary-foreground">
                     Search
                   </Button>
                 </Link>
@@ -91,11 +93,11 @@ const Index = () => {
       </section>
 
       {/* Specialties */}
-      <section className="container mx-auto px-4 py-16">
+      <section className="container mx-auto px-4 py-10 sm:py-16">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-6 sm:mb-8">
             <div>
-              <h2 className="text-2xl font-bold text-foreground">Browse by Specialty</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground">Browse by Specialty</h2>
               <p className="text-muted-foreground mt-1">Find the right doctor for your needs</p>
             </div>
             <Link to="/doctors" className="text-primary text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all">
@@ -103,7 +105,7 @@ const Index = () => {
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
             {specialties.map((spec, i) => {
               const Icon = iconMap[spec.icon] || Stethoscope;
               return (
@@ -135,11 +137,11 @@ const Index = () => {
       </section>
 
       {/* Featured Doctors */}
-      <section className="container mx-auto px-4 py-16">
+      <section className="container mx-auto px-4 py-10 sm:py-16">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-6 sm:mb-8">
             <div>
-              <h2 className="text-2xl font-bold text-foreground">Top Rated Doctors</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground">Top Rated Doctors</h2>
               <p className="text-muted-foreground mt-1">Trusted by thousands of patients</p>
             </div>
             <Link to="/doctors" className="text-primary text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all">
