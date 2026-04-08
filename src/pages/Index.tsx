@@ -158,15 +158,15 @@ const Index = () => {
       </section>
 
       {/* CTA */}
-      <section className="container mx-auto px-4 py-16">
+      <section className="container mx-auto px-4 py-10 sm:py-16">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="rounded-3xl gradient-primary p-8 md:p-14 text-center"
+          className="rounded-2xl sm:rounded-3xl gradient-primary p-6 sm:p-8 md:p-14 text-center"
         >
-          <h2 className="text-2xl md:text-3xl font-bold text-primary-foreground mb-4">Are you a Doctor?</h2>
-          <p className="text-primary-foreground/80 mb-8 max-w-lg mx-auto">Join our platform and reach thousands of patients. Manage appointments, consultations, and prescriptions — all in one place.</p>
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-primary-foreground mb-3 sm:mb-4">Are you a Doctor?</h2>
+          <p className="text-primary-foreground/80 mb-6 sm:mb-8 max-w-lg mx-auto text-sm sm:text-base">Join our platform and reach thousands of patients. Manage appointments, consultations, and prescriptions — all in one place.</p>
           <Link to="/doctor-dashboard">
             <Button size="lg" className="rounded-xl bg-card text-foreground hover:bg-card/90 border-0">
               Join as Doctor <ArrowRight className="w-4 h-4 ml-2" />
