@@ -58,9 +58,9 @@ const Navbar = () => {
           </Button>
           {user ? (
             <div className="flex items-center gap-3">
-              <Link to="/profile" className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-primary/10 hover:bg-primary/20 transition-colors">
+              <Link to={user.role === 'doctor' ? "/doctor-dashboard" : "/profile"} className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-primary/10 hover:bg-primary/20 transition-colors">
                 <User className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium text-primary">{user.name}</span>
+                <span className="text-sm font-medium text-primary">{user.role === 'doctor' ? "Portal" : user.name}</span>
               </Link>
               <Button variant="ghost" size="sm" onClick={handleLogout} className="rounded-xl">Logout</Button>
             </div>
@@ -111,9 +111,9 @@ const Navbar = () => {
               ))}
               {user ? (
                 <div className="flex flex-col gap-2 pt-2 border-t border-border/50">
-                  <Link to="/profile" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 px-4 py-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                  <Link to={user.role === 'doctor' ? "/doctor-dashboard" : "/profile"} onClick={() => setMobileOpen(false)} className="flex items-center gap-2 px-4 py-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                     <User className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-medium">{user.name}</span>
+                    <span className="text-sm font-medium">{user.role === 'doctor' ? "Doctor Portal" : user.name}</span>
                   </Link>
                   <Button variant="outline" onClick={handleLogout} className="w-full rounded-xl">Logout</Button>
                 </div>

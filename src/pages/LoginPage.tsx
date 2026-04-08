@@ -32,7 +32,11 @@ const LoginPage = () => {
         const res = await api.post('/auth/login', { email, password });
         localStorage.setItem('userInfo', JSON.stringify(res.data));
         toast.success("Login successful!");
-        navigate('/doctors');
+        if (res.data.role === 'doctor') {
+          navigate('/doctor-dashboard');
+        } else {
+          navigate('/doctors');
+        }
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Authentication failed");

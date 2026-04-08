@@ -79,8 +79,48 @@ const getMe = async (req, res) => {
   }
 };
 
+// @desc    Update user profile
+// @route   PUT /api/auth/me
+// @access  Private
+const updateMe = async (req, res) => {
+  const user = await User.findById(req.user.id);
+
+  if (user) {
+    user.name = req.body.name || user.name;
+    user.phone = req.body.phone || user.phone;
+    user.gender = req.body.gender || user.gender;
+    user.dob = req.body.dob || user.dob;
+    user.bloodGroup = req.body.bloodGroup || user.bloodGroup;
+    user.email = req.body.email || user.email;
+
+    if (user.role === 'doctor' && req.body.doctorDetails) {
+      user.doctorDetails = {
+        ...user.doctorDetails,
+        ...req.body.doctorDetails
+      };
+    }
+
+    const updatedUser = await user.save();
+    
+    res.json({
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      phone: updatedUser.phone,
+      gender: updatedUser.gender,
+      dob: updatedUser.dob,
+      bloodGroup: updatedUser.bloodGroup,
+      role: updatedUser.role,
+      token: req.headers.authorization ? req.headers.authorization.split(' ')[1] : ''
+    });
+  } else {
+    res.status(404).json({ message: 'User not found' });
+  }
+};
+
 module.exports = {
   registerUser,
   authUser,
-  getMe
+  getMe,
+  updateMe
 };

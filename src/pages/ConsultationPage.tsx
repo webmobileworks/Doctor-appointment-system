@@ -28,7 +28,7 @@ const ConsultationPage = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    const newSocket = io("http://localhost:5052");
+    const newSocket = io("http://localhost:5051");
     setSocket(newSocket);
 
     newSocket.emit("join_consultation", "test-room-1");

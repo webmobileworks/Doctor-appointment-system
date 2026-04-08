@@ -53,6 +53,13 @@ const BookingPage = () => {
     return { date: d.toISOString().split("T")[0], day: d.toLocaleDateString("en", { weekday: "short" }), num: d.getDate() };
   });
 
+  const selectedDateObj = dates.find(d => d.date === selectedDate);
+  const availableForDay = selectedDateObj && doctor 
+    ? doctor.availableSlots
+        .filter((s: string) => s.startsWith(selectedDateObj.day))
+        .map((s: string) => s.split("-")[1])
+    : [];
+
   const handleConfirm = () => {
     bookMutation.mutate({
       doctorId: id,
@@ -159,12 +166,14 @@ const BookingPage = () => {
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
                 <h3 className="font-semibold mb-4 flex items-center gap-2"><Clock className="w-4 h-4" /> Select Time</h3>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                  {doctor.availableSlots.map((slot) => (
+                  {availableForDay.length > 0 ? availableForDay.map((slot: string) => (
                     <button key={slot} onClick={() => setSelectedSlot(slot)}
                       className={`py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
                         selectedSlot === slot ? "gradient-primary text-primary-foreground" : "border border-border hover:border-primary"
                       }`}>{slot}</button>
-                  ))}
+                  )) : (
+                    <p className="text-sm text-muted-foreground col-span-full">No active slots available for this day.</p>
+                  )}
                 </div>
               </motion.div>
             )}

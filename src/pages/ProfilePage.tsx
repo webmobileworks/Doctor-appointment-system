@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import api from "@/lib/api";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -42,12 +44,33 @@ const ProfilePage = () => {
     });
   }, [navigate]);
 
+  const { data: appointments = [], isLoading: isLoadingAppointments } = useQuery({
+    queryKey: ['my-appointments'],
+    queryFn: async () => {
+      const res = await api.get('/appointments');
+      return res.data;
+    },
+    enabled: !!user
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (updatedData: any) => {
+      const res = await api.put('/auth/me', updatedData);
+      return res.data;
+    },
+    onSuccess: (data) => {
+      localStorage.setItem("userInfo", JSON.stringify(data));
+      setUser(data);
+      setIsEditing(false);
+      toast.success("Profile updated on server successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to update profile");
+    }
+  });
+
   const handleSave = () => {
-    const updated = { ...user, ...form };
-    localStorage.setItem("userInfo", JSON.stringify(updated));
-    setUser(updated);
-    setIsEditing(false);
-    toast.success("Profile updated successfully!");
+    updateMutation.mutate(form);
   };
 
   if (!user) return null;
@@ -59,10 +82,13 @@ const ProfilePage = () => {
     .toUpperCase()
     .slice(0, 2);
 
+  const prescriptionCount = appointments.filter((a: any) => a.prescriptionFile).length;
+  const consultationCount = appointments.filter((a: any) => a.status === 'completed').length;
+
   const stats = [
-    { label: "Appointments", value: "12", icon: Calendar },
-    { label: "Prescriptions", value: "8", icon: FileText },
-    { label: "Consultations", value: "5", icon: Clock },
+    { label: "Appointments", value: appointments.length.toString(), icon: Calendar },
+    { label: "Prescriptions", value: prescriptionCount.toString(), icon: FileText },
+    { label: "Consultations", value: consultationCount.toString(), icon: Clock },
   ];
 
   return (
@@ -103,8 +129,8 @@ const ProfilePage = () => {
                 </Button>
               ) : (
                 <div className="flex gap-2">
-                  <Button onClick={handleSave} className="rounded-xl bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30 border-0">
-                    <Save className="w-4 h-4 mr-2" /> Save
+                  <Button onClick={handleSave} disabled={updateMutation.isPending} className="rounded-xl bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30 border-0">
+                    <Save className="w-4 h-4 mr-2" /> {updateMutation.isPending ? "Saving..." : "Save"}
                   </Button>
                   <Button onClick={() => setIsEditing(false)} variant="ghost" className="rounded-xl text-primary-foreground hover:bg-primary-foreground/10">
                     <X className="w-4 h-4" />
@@ -163,6 +189,41 @@ const ProfilePage = () => {
             <Button variant="outline" className="rounded-xl h-12 justify-start gap-3" onClick={() => navigate("/consultation")}>
               <Clock className="w-4 h-4 text-primary" /> Consultations
             </Button>
+          </div>
+
+          <Separator className="my-8" />
+          <h2 className="text-lg font-semibold text-foreground mb-4">My Appointments</h2>
+          <div className="space-y-4">
+            {isLoadingAppointments ? (
+              <p className="text-sm text-muted-foreground">Loading appointments...</p>
+            ) : appointments.length === 0 ? (
+              <p className="text-sm text-muted-foreground">You have no upcoming appointments.</p>
+            ) : (
+              appointments.map((apt: any) => (
+                <div key={apt._id} className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-muted/10 hover:bg-muted/30 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <Avatar className="w-12 h-12 hidden sm:block">
+                      <AvatarImage src={apt.doctor?.doctorDetails?.image || ""} />
+                      <AvatarFallback className="bg-primary/10 text-primary">{apt.doctor?.name ? apt.doctor.name.split(" ")[1]?.[0] : "D"}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-semibold">{apt.doctor?.name || 'Unknown Doctor'}</p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
+                        <Calendar className="w-3 h-3" /> {apt.date} • {apt.time}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <Badge variant="outline" className={`capitalize ${
+                      apt.status === "confirmed" ? "bg-success/10 text-success border-success/20" : 
+                      apt.status === "pending" ? "bg-warning/10 text-warning border-warning/20" : ""
+                    }`}>
+                      {apt.status}
+                    </Badge>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </motion.div>
       </div>
