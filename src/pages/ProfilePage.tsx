@@ -44,6 +44,33 @@ const ProfilePage = () => {
     });
   }, [navigate]);
 
+  const { data: profileData } = useQuery({
+    queryKey: ['my-profile'],
+    queryFn: async () => {
+      const res = await api.get('/auth/me');
+      return res.data;
+    },
+    enabled: !!localStorage.getItem("userInfo")
+  });
+
+  useEffect(() => {
+    if (profileData) {
+      setUser(profileData);
+      setForm({
+        name: profileData.name || "",
+        phone: profileData.phone || "",
+        email: profileData.email || "",
+        gender: profileData.gender || "",
+        dob: profileData.dob || "",
+        bloodGroup: profileData.bloodGroup || "",
+      });
+      const stored = localStorage.getItem("userInfo");
+      if (stored) {
+        localStorage.setItem("userInfo", JSON.stringify({ ...JSON.parse(stored), ...profileData }));
+      }
+    }
+  }, [profileData]);
+
   const { data: appointments = [], isLoading: isLoadingAppointments } = useQuery({
     queryKey: ['my-appointments'],
     queryFn: async () => {

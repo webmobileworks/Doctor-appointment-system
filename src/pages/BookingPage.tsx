@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Calendar, Clock, CheckCircle, ArrowLeft, User, Phone, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ import api from "@/lib/api";
 
 const BookingPage = () => {
   const { id } = useParams();
+  const location = useLocation();
+
   
   const { data: doctor, isLoading } = useQuery({
     queryKey: ['doctor', id],
@@ -27,11 +29,20 @@ const BookingPage = () => {
       };
     }
   });
-  const [step, setStep] = useState(1);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-  const [patientName, setPatientName] = useState("");
-  const [patientPhone, setPatientPhone] = useState("");
+
+  const passedState = location.state as { selectedDate?: string, selectedSlot?: string } | null;
+  const initDate = passedState?.selectedDate || null;
+  const initSlot = passedState?.selectedSlot || null;
+
+  const [step, setStep] = useState((initDate && initSlot) ? 2 : 1);
+  const [selectedDate, setSelectedDate] = useState<string | null>(initDate);
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(initSlot);
+  
+  const userInfoStr = localStorage.getItem('userInfo');
+  const user = userInfoStr ? JSON.parse(userInfoStr) : null;
+
+  const [patientName, setPatientName] = useState(user?.name || "");
+  const [patientPhone, setPatientPhone] = useState(user?.phone || "");
   const [patientSymptoms, setPatientSymptoms] = useState("");
 
   const bookMutation = useMutation({

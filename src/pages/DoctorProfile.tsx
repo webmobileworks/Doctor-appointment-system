@@ -40,11 +40,21 @@ const DoctorProfile = () => {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
+  const userInfoStr = localStorage.getItem("userInfo");
+  const user = userInfoStr ? JSON.parse(userInfoStr) : null;
+
   const dates = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() + i);
     return { date: d.toISOString().split("T")[0], day: d.toLocaleDateString("en", { weekday: "short" }), num: d.getDate(), month: d.toLocaleDateString("en", { month: "short" }) };
   });
+
+  const selectedDateObj = dates.find(d => d.date === selectedDate);
+  const availableForDay = selectedDateObj && doctor 
+    ? (doctor.availableSlots || [])
+        .filter((s: string) => s.startsWith(selectedDateObj.day))
+        .map((s: string) => s.split("-")[1])
+    : [];
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading profile...</div>;
@@ -78,9 +88,9 @@ const DoctorProfile = () => {
                   <p className="text-sm text-muted-foreground mt-1">{doctor.qualification}</p>
                   <div className="flex flex-wrap gap-4 mt-4 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" />{doctor.experience} yrs exp</span>
-                    <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" />{doctor.location}</span>
+                    <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" />{doctor.location || 'Unknown Location'}</span>
                     <span className="flex items-center gap-1.5"><Star className="w-4 h-4 text-warning fill-warning" />{doctor.rating} ({doctor.reviewCount} reviews)</span>
-                    <span className="flex items-center gap-1.5"><Languages className="w-4 h-4" />{doctor.languages.join(", ")}</span>
+                    <span className="flex items-center gap-1.5"><Languages className="w-4 h-4" />{(doctor.languages || []).join(", ")}</span>
                   </div>
                 </div>
               </div>
@@ -114,7 +124,7 @@ const DoctorProfile = () => {
                       { icon: GraduationCap, label: "Qualification", value: doctor.qualification },
                       { icon: Clock, label: "Experience", value: `${doctor.experience} years` },
                       { icon: IndianRupee, label: "Consultation Fee", value: `₹${doctor.fees}` },
-                      { icon: Languages, label: "Languages", value: doctor.languages.join(", ") },
+                      { icon: Languages, label: "Languages", value: (doctor.languages || []).join(", ") },
                     ].map((item) => (
                       <div key={item.label} className="flex items-start gap-3 p-3 rounded-xl bg-muted/30">
                         <item.icon className="w-5 h-5 text-primary mt-0.5" />
@@ -175,7 +185,7 @@ const DoctorProfile = () => {
                   <div>
                     <h3 className="font-semibold mb-4">Available Slots</h3>
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                      {doctor.availableSlots.map((slot) => (
+                      {availableForDay.length > 0 ? availableForDay.map((slot: string) => (
                         <button
                           key={slot}
                           onClick={() => setSelectedSlot(slot)}
@@ -185,7 +195,9 @@ const DoctorProfile = () => {
                         >
                           {slot}
                         </button>
-                      ))}
+                      )) : (
+                        <p className="text-sm text-muted-foreground col-span-full">No active slots available for this day.</p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -213,7 +225,10 @@ const DoctorProfile = () => {
                   </div>
                 </div>
 
-                <Link to={selectedDate && selectedSlot ? `/booking/${doctor.id}` : "#"}>
+                <Link 
+                  to={!selectedDate || !selectedSlot ? "#" : user ? `/booking/${doctor.id}` : "/login"} 
+                  state={user ? { selectedDate, selectedSlot } : { from: `/booking/${doctor.id}`, selectedDate, selectedSlot }}
+                >
                   <Button
                     className="w-full rounded-xl gradient-primary border-0 text-primary-foreground h-11"
                     disabled={!selectedDate || !selectedSlot}
@@ -221,7 +236,10 @@ const DoctorProfile = () => {
                     <Building className="w-4 h-4 mr-2" /> Book In-person
                   </Button>
                 </Link>
-                <Link to={selectedDate && selectedSlot ? `/consultation` : "#"}>
+                <Link 
+                  to={!selectedDate || !selectedSlot ? "#" : user ? `/consultation` : "/login"}
+                  state={user ? { doctorId: doctor.id } : { from: "/consultation" }}
+                >
                   <Button
                     variant="outline"
                     className="w-full rounded-xl h-11 mt-2"

@@ -39,6 +39,11 @@ const registerUser = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      phone: user.phone,
+      gender: user.gender,
+      dob: user.dob,
+      bloodGroup: user.bloodGroup,
+      doctorDetails: user.doctorDetails,
       token: generateToken(user._id, user.role),
     });
   } else {
@@ -60,6 +65,11 @@ const authUser = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      phone: user.phone,
+      gender: user.gender,
+      dob: user.dob,
+      bloodGroup: user.bloodGroup,
+      doctorDetails: user.doctorDetails,
       token: generateToken(user._id, user.role),
     });
   } else {

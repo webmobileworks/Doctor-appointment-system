@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Lock, ArrowRight, User, Mail, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import api from "@/lib/api";
 
@@ -14,6 +14,7 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,16 +24,26 @@ const LoginPage = () => {
     }
     
     try {
+      const fromState = location.state as any;
+
       if (isSignup) {
         const res = await api.post('/auth/register', { name, email, password, role: 'patient' });
         localStorage.setItem('userInfo', JSON.stringify(res.data));
         toast.success("Account created successfully!");
-        navigate('/doctors');
+        
+        if (fromState?.from) {
+          navigate(fromState.from, { state: fromState });
+        } else {
+          navigate('/doctors');
+        }
       } else {
         const res = await api.post('/auth/login', { email, password });
         localStorage.setItem('userInfo', JSON.stringify(res.data));
         toast.success("Login successful!");
-        if (res.data.role === 'doctor') {
+        
+        if (fromState?.from) {
+          navigate(fromState.from, { state: fromState });
+        } else if (res.data.role === 'doctor') {
           navigate('/doctor-dashboard');
         } else {
           navigate('/doctors');
