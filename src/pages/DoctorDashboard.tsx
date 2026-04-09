@@ -219,6 +219,9 @@ const DashboardView = ({ appointments }: any) => {
 };
 
 const ProfileView = ({ profile, updateMutation }: any) => {
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(profile?.doctorDetails?.image ? `http://localhost:5051${profile.doctorDetails.image}` : null);
+
   const [form, setForm] = useState({
     name: profile?.name || "",
     specialty: profile?.doctorDetails?.specialty || "",
@@ -228,17 +231,35 @@ const ProfileView = ({ profile, updateMutation }: any) => {
     about: profile?.doctorDetails?.about || ""
   });
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const selectedFile = e.target.files[0];
+      setFile(selectedFile);
+      setPreview(URL.createObjectURL(selectedFile));
+    }
+  };
+
   const handleSave = () => {
-    updateMutation.mutate({
-      name: form.name,
-      doctorDetails: {
-        specialty: form.specialty,
-        experience: Number(form.experience),
-        fees: Number(form.fees),
-        qualification: form.qualification,
-        about: form.about
-      }
-    });
+    const docDetailsObj = {
+      specialty: form.specialty,
+      experience: Number(form.experience),
+      fees: Number(form.fees),
+      qualification: form.qualification,
+      about: form.about
+    };
+
+    if (file) {
+      const formData = new FormData();
+      formData.append('name', form.name);
+      formData.append('doctorDetails', JSON.stringify(docDetailsObj));
+      formData.append('image', file);
+      updateMutation.mutate(formData);
+    } else {
+      updateMutation.mutate({
+        name: form.name,
+        doctorDetails: docDetailsObj
+      });
+    }
   };
 
   return (
@@ -246,8 +267,19 @@ const ProfileView = ({ profile, updateMutation }: any) => {
       <div className="glass-card p-6 space-y-5">
         <h3 className="font-semibold">Profile Information</h3>
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-20 h-20 rounded-2xl gradient-primary flex items-center justify-center text-primary-foreground font-bold text-xl">{profile.name[0]}</div>
-          <Button variant="outline" size="sm" className="rounded-xl">Change Photo</Button>
+          <div className="w-20 h-20 rounded-2xl flex items-center justify-center font-bold text-xl overflow-hidden relative">
+            {preview ? (
+              <img src={preview.startsWith('blob:') ? preview : `http://localhost:5051${profile.doctorDetails.image}`} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full gradient-primary flex items-center justify-center text-primary-foreground">
+                {profile.name[0]}
+              </div>
+            )}
+          </div>
+          <div className="relative">
+            <input type="file" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" />
+            <Button variant="outline" size="sm" className="rounded-xl pointer-events-none">Change Photo</Button>
+          </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div><label className="text-xs text-muted-foreground">Full Name</label><Input value={form.name} onChange={e=>setForm({...form, name: e.target.value})} className="mt-1 rounded-xl" /></div>

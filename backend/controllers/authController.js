@@ -103,11 +103,26 @@ const updateMe = async (req, res) => {
     user.bloodGroup = req.body.bloodGroup || user.bloodGroup;
     user.email = req.body.email || user.email;
 
-    if (user.role === 'doctor' && req.body.doctorDetails) {
-      user.doctorDetails = {
-        ...user.doctorDetails,
-        ...req.body.doctorDetails
-      };
+    if (user.role === 'doctor') {
+      let docDetails = req.body.doctorDetails;
+      if (typeof docDetails === 'string') {
+        try {
+          docDetails = JSON.parse(docDetails);
+        } catch(e) {
+          docDetails = {};
+        }
+      }
+      
+      if (docDetails) {
+        user.doctorDetails = {
+          ...user.doctorDetails,
+          ...docDetails
+        };
+      }
+      
+      if (req.file) {
+        user.doctorDetails.image = `/uploads/${req.file.filename}`;
+      }
     }
 
     const updatedUser = await user.save();
