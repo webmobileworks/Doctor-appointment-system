@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import { io, Socket } from "socket.io-client";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
@@ -25,6 +26,12 @@ const navItems = [
 const DoctorDashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
+  
+  // Prescription Form States
+  const [selectedApt, setSelectedApt] = useState("");
+  const [notes, setNotes] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+
   const navigate = useNavigate();
 
   // Redirect if not doctor
@@ -84,6 +91,9 @@ const DoctorDashboard = () => {
     },
     onSuccess: () => {
       toast.success("Prescription uploaded!");
+      setSelectedApt("");
+      setNotes("");
+      setFile(null);
       refetchAppointments();
     },
     onError: () => toast.error("Upload failed")
@@ -115,9 +125,8 @@ const DoctorDashboard = () => {
         <nav className="flex-1 py-4 px-2 space-y-1">
           {navItems.map((item) => (
             <button key={item.id} onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
-                activeTab === item.id ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}>
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${activeTab === item.id ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}>
               <item.icon className="w-4 h-4 shrink-0" />
               {!collapsed && <span>{item.label}</span>}
             </button>
@@ -154,8 +163,19 @@ const DoctorDashboard = () => {
           {activeTab === "profile" && <ProfileView profile={profile} updateMutation={updateProfileMutation} />}
           {activeTab === "availability" && <AvailabilityView profile={profile} updateMutation={updateProfileMutation} />}
           {activeTab === "appointments" && <AppointmentsView appointments={appointments} statusMutation={updateStatusMutation} />}
-          {activeTab === "consultation" && <DoctorConsultationView />}
-          {activeTab === "prescriptions" && <PrescriptionUploadView appointments={appointments} uploadMutation={uploadPrescriptionMutation} />}
+          {activeTab === "consultation" && <DoctorConsultationView profile={profile} />}
+          {activeTab === 'prescriptions' && (
+                  <PrescriptionUploadView 
+                    appointments={appointments} 
+                    uploadMutation={uploadPrescriptionMutation} 
+                    selectedApt={selectedApt}
+                    setSelectedApt={setSelectedApt}
+                    notes={notes}
+                    setNotes={setNotes}
+                    file={file}
+                    setFile={setFile}
+                  />
+                )}
           {activeTab === "settings" && <SettingsView />}
         </div>
       </main>
@@ -168,7 +188,7 @@ const DashboardView = ({ appointments }: any) => {
   const todayAppointments = appointments.filter((a: any) => new Date(a.createdAt).toDateString() === new Date().toDateString());
   const completed = appointments.filter((a: any) => a.status === 'completed');
   const revenue = completed.reduce((acc: number, curr: any) => acc + (curr.amount || 0), 0);
-  
+
   const stats = [
     { icon: Users, label: "Today's Patients", value: todayAppointments.length.toString(), trend: "", color: "text-primary" },
     { icon: Calendar, label: "Total Bookings", value: appointments.length.toString(), trend: "", color: "text-secondary" },
@@ -203,12 +223,11 @@ const DashboardView = ({ appointments }: any) => {
                   <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" />{apt.date} • {apt.time}</p>
                 </div>
               </div>
-              <span className={`px-2.5 py-1 rounded-lg text-xs font-medium uppercase ${
-                apt.status === "confirmed" ? "bg-primary/10 text-primary" : 
-                apt.status === "pending" ? "bg-warning/10 text-warning" : 
-                apt.status === "completed" ? "bg-success/10 text-success" : 
-                "bg-muted text-muted-foreground"
-              }`}>{apt.status}</span>
+              <span className={`px-2.5 py-1 rounded-lg text-xs font-medium uppercase ${apt.status === "confirmed" ? "bg-primary/10 text-primary" :
+                apt.status === "pending" ? "bg-warning/10 text-warning" :
+                  apt.status === "completed" ? "bg-success/10 text-success" :
+                    "bg-muted text-muted-foreground"
+                }`}>{apt.status}</span>
             </div>
           ))}
           {appointments.length === 0 && <p className="text-sm text-muted-foreground">No appointments booked yet.</p>}
@@ -220,7 +239,7 @@ const DashboardView = ({ appointments }: any) => {
 
 const ProfileView = ({ profile, updateMutation }: any) => {
   const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(profile?.doctorDetails?.image ? `http://localhost:5051${profile.doctorDetails.image}` : null);
+  const [preview, setPreview] = useState<string | null>(profile?.doctorDetails?.image ? `http://localhost:5050${profile.doctorDetails.image}` : null);
 
   const [form, setForm] = useState({
     name: profile?.name || "",
@@ -269,7 +288,7 @@ const ProfileView = ({ profile, updateMutation }: any) => {
         <div className="flex items-center gap-4 mb-4">
           <div className="w-20 h-20 rounded-2xl flex items-center justify-center font-bold text-xl overflow-hidden relative">
             {preview ? (
-              <img src={preview.startsWith('blob:') ? preview : `http://localhost:5051${profile.doctorDetails.image}`} alt="Profile" className="w-full h-full object-cover" />
+              <img src={preview.startsWith('blob:') ? preview : `http://localhost:5050${profile.doctorDetails.image}`} alt="Profile" className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full gradient-primary flex items-center justify-center text-primary-foreground">
                 {profile.name[0]}
@@ -282,12 +301,12 @@ const ProfileView = ({ profile, updateMutation }: any) => {
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div><label className="text-xs text-muted-foreground">Full Name</label><Input value={form.name} onChange={e=>setForm({...form, name: e.target.value})} className="mt-1 rounded-xl" /></div>
-          <div><label className="text-xs text-muted-foreground">Specialty</label><Input value={form.specialty} onChange={e=>setForm({...form, specialty: e.target.value})} className="mt-1 rounded-xl" /></div>
-          <div><label className="text-xs text-muted-foreground">Experience (Years)</label><Input type="number" value={form.experience} onChange={e=>setForm({...form, experience: e.target.value})} className="mt-1 rounded-xl" /></div>
-          <div><label className="text-xs text-muted-foreground">Fees (₹)</label><Input type="number" value={form.fees} onChange={e=>setForm({...form, fees: e.target.value})} className="mt-1 rounded-xl" /></div>
-          <div className="sm:col-span-2"><label className="text-xs text-muted-foreground">Qualification</label><Input value={form.qualification} onChange={e=>setForm({...form, qualification: e.target.value})} className="mt-1 rounded-xl" /></div>
-          <div className="sm:col-span-2"><label className="text-xs text-muted-foreground">About</label><Textarea value={form.about} onChange={e=>setForm({...form, about: e.target.value})} className="mt-1 rounded-xl" /></div>
+          <div><label className="text-xs text-muted-foreground">Full Name</label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="mt-1 rounded-xl" /></div>
+          <div><label className="text-xs text-muted-foreground">Specialty</label><Input value={form.specialty} onChange={e => setForm({ ...form, specialty: e.target.value })} className="mt-1 rounded-xl" /></div>
+          <div><label className="text-xs text-muted-foreground">Experience (Years)</label><Input type="number" value={form.experience} onChange={e => setForm({ ...form, experience: e.target.value })} className="mt-1 rounded-xl" /></div>
+          <div><label className="text-xs text-muted-foreground">Fees (₹)</label><Input type="number" value={form.fees} onChange={e => setForm({ ...form, fees: e.target.value })} className="mt-1 rounded-xl" /></div>
+          <div className="sm:col-span-2"><label className="text-xs text-muted-foreground">Qualification</label><Input value={form.qualification} onChange={e => setForm({ ...form, qualification: e.target.value })} className="mt-1 rounded-xl" /></div>
+          <div className="sm:col-span-2"><label className="text-xs text-muted-foreground">About</label><Textarea value={form.about} onChange={e => setForm({ ...form, about: e.target.value })} className="mt-1 rounded-xl" /></div>
         </div>
         <Button onClick={handleSave} disabled={updateMutation.isPending} className="rounded-xl gradient-primary border-0 text-primary-foreground gap-2">
           <Save className="w-4 h-4" /> {updateMutation.isPending ? "Saving..." : "Save Changes"}
@@ -380,12 +399,11 @@ const AppointmentsView = ({ appointments, statusMutation }: any) => (
                 <td className="py-3 text-sm text-muted-foreground">{apt.date}</td>
                 <td className="py-3 text-sm">{apt.time}</td>
                 <td className="py-3">
-                  <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold uppercase tracking-wider ${
-                    apt.status === "confirmed" ? "bg-primary/10 text-primary" : 
-                    apt.status === "pending" ? "bg-warning/10 text-warning" : 
-                    apt.status === "completed" ? "bg-success/10 text-success" :
-                    "bg-muted text-muted-foreground"
-                  }`}>{apt.status}</span>
+                  <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold uppercase tracking-wider ${apt.status === "confirmed" ? "bg-primary/10 text-primary" :
+                    apt.status === "pending" ? "bg-warning/10 text-warning" :
+                      apt.status === "completed" ? "bg-success/10 text-success" :
+                        "bg-muted text-muted-foreground"
+                    }`}>{apt.status}</span>
                 </td>
                 <td className="py-3">
                   <div className="flex gap-2 justify-end">
@@ -415,22 +433,15 @@ const AppointmentsView = ({ appointments, statusMutation }: any) => (
   </motion.div>
 );
 
-const PrescriptionUploadView = ({ appointments, uploadMutation }: any) => {
-  const [selectedApt, setSelectedApt] = useState("");
-  const [notes, setNotes] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-  
+const PrescriptionUploadView = ({ appointments, uploadMutation, selectedApt, setSelectedApt, notes, setNotes, file, setFile }: any) => {
   // Show only confirmed and completed
   const eligible = appointments.filter((a: any) => a.status === 'confirmed' || a.status === 'completed');
 
   const handleUpload = () => {
-    if (!selectedApt || !file) {
-      toast.error("Please select an appointment and a file");
-      return;
-    }
     const formData = new FormData();
-    formData.append('prescription', file);
-    // Since we don't have notes saved in schema natively beside 'symptoms', we rely on purely PDF attach.
+    if (file) formData.append('prescription', file);
+    if (notes) formData.append('diagnosis', notes);
+
     uploadMutation.mutate({ id: selectedApt, formData });
   };
 
@@ -438,53 +449,53 @@ const PrescriptionUploadView = ({ appointments, uploadMutation }: any) => {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl space-y-6">
       <div className="glass-card p-6 space-y-5">
         <h3 className="font-semibold">Upload Prescription</h3>
-        
+
         <div>
-           <label className="text-xs text-muted-foreground mb-1 block">Select Patient Session</label>
-           <select 
-             className="w-full h-11 px-3 rounded-xl border border-input bg-background"
-             value={selectedApt}
-             onChange={(e) => setSelectedApt(e.target.value)}
-           >
-             <option value="">Select an appointment...</option>
-             {eligible.map((apt: any) => (
-               <option key={apt._id} value={apt._id}>
-                 {apt.patient?.name} - {apt.date}
-               </option>
-             ))}
-           </select>
+          <label className="text-xs text-muted-foreground mb-1 block">Select Patient Session</label>
+          <select
+            className="w-full h-11 px-3 rounded-xl border border-input bg-background"
+            value={selectedApt}
+            onChange={(e) => setSelectedApt(e.target.value)}
+          >
+            <option value="">Select an appointment...</option>
+            {eligible.map((apt: any) => (
+              <option key={apt._id} value={apt._id}>
+                {apt.patient?.name} - {apt.date}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>
           <label className="text-xs text-muted-foreground block mb-1">Diagnosis Notes (Optional)</label>
-          <Textarea 
-             value={notes} onChange={(e) => setNotes(e.target.value)}
-             placeholder="Summary of diagnosis..." className="rounded-xl min-h-[100px]" 
+          <Textarea
+            value={notes} onChange={(e) => setNotes(e.target.value)}
+            placeholder="Summary of diagnosis..." className="rounded-xl min-h-[100px]"
           />
         </div>
-        
+
         <div className="border-2 border-dashed border-primary/40 bg-primary/5 rounded-xl p-8 text-center relative overflow-hidden transition-colors hover:border-primary">
-          <input 
-            type="file" 
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+          <input
+            type="file"
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             onChange={(e) => e.target.files && setFile(e.target.files[0])}
             accept=".pdf,.jpg,.jpeg,.png"
           />
           <Upload className={`w-8 h-8 mx-auto mb-3 ${file ? 'text-primary' : 'text-muted-foreground'}`} />
           {file ? (
-             <p className="text-sm font-medium text-primary">Selected: {file.name}</p>
+            <p className="text-sm font-medium text-primary">Selected: {file.name}</p>
           ) : (
-             <>
-               <p className="text-sm text-foreground">Click to browse or drag file here</p>
-               <p className="text-xs text-muted-foreground mt-1">PDF, JPG up to 10MB</p>
-             </>
+            <>
+              <p className="text-sm text-foreground">Click to browse or drag file here</p>
+              <p className="text-xs text-muted-foreground mt-1">PDF, JPG up to 10MB</p>
+            </>
           )}
         </div>
-        
-        <Button 
-           onClick={handleUpload} 
-           disabled={uploadMutation.isPending || !file || !selectedApt} 
-           className="rounded-xl gradient-primary border-0 text-primary-foreground gap-2 w-full md:w-auto"
+
+        <Button
+          onClick={handleUpload}
+          disabled={uploadMutation.isPending || !file || !selectedApt}
+          className="rounded-xl gradient-primary border-0 text-primary-foreground gap-2 w-full md:w-auto"
         >
           <Plus className="w-4 h-4" /> {uploadMutation.isPending ? "Uploading..." : "Upload Prescription"}
         </Button>
@@ -493,48 +504,189 @@ const PrescriptionUploadView = ({ appointments, uploadMutation }: any) => {
   );
 };
 
-const DoctorConsultationView = () => {
-  const [messages, setMessages] = useState([
-    { id: "1", text: "Doctor, I have been having chest pain.", sender: "patient" as const, time: "2:00 PM" },
-    { id: "2", text: "I understand. Can you describe the pain? Is it sharp or dull?", sender: "doctor" as const, time: "2:02 PM" },
-  ]);
+const DoctorConsultationView = ({ profile }: any) => {
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [activeChat, setActiveChat] = useState<any | null>(null);
+  const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const activeChatRef = useRef<any>(null);
+  useEffect(() => {
+    activeChatRef.current = activeChat;
+  }, [activeChat]);
+
+  // Fetch conversations
+  useEffect(() => {
+    const fetchConversations = async () => {
+      try {
+        const res = await api.get('/messages/conversations');
+        setConversations(res.data);
+        if (res.data.length > 0) {
+          setActiveChat(res.data[0]);
+        }
+      } catch (err) {
+        console.error("Error fetching conversations", err);
+      }
+    };
+    fetchConversations();
+  }, []);
+
+  // Socket and Message fetching
+  useEffect(() => {
+    if (!profile?._id) return;
+
+    const newSocket = io("http://localhost:5050");
+    setSocket(newSocket);
+
+    // Join personal room for messages once connected
+    newSocket.on("connect", () => {
+      newSocket.emit("join_consultation", profile._id.toString());
+    });
+
+    newSocket.on("receive_message", (data: any) => {
+      // Update Side panel optimistically
+      setConversations((prevConvs) => prevConvs.map(c => {
+        if (c._id === data.senderId || c._id === data.receiverId) {
+          return { ...c, lastMessage: data.text };
+        }
+        return c;
+      }));
+
+      const currentActiveChat = activeChatRef.current;
+      if (!currentActiveChat) return;
+
+      const user1 = profile._id.toString();
+      const user2 = currentActiveChat._id.toString();
+      const activeConsultationId = [user1, user2].sort().join('_');
+
+      if (data.consultationId === activeConsultationId) {
+        setMessages((prev) => {
+          if (prev.find(m => m._id === data.id || m.id === data.id)) return prev;
+          return [...prev, { ...data, sender: data.senderId, id: data.id }];
+        });
+      }
+    });
+
+    return () => {
+      newSocket.disconnect();
+    };
+  }, [profile?._id]);
+
+  useEffect(() => {
+    if (!activeChat || !profile || !socket) return;
+    
+    const fetchMessages = async () => {
+      try {
+        const res = await api.get(`/messages/${activeChat._id}`);
+        setMessages(res.data.messages);
+      } catch (err) {
+        console.error("Fetch msg error", err);
+      }
+    };
+    fetchMessages();
+  }, [activeChat, profile, socket]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const send = () => {
-    if (!input.trim()) return;
-    setMessages([...messages, { id: Date.now().toString(), text: input, sender: "doctor", time: new Date().toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit" }) }]);
+    if (!input.trim() || !socket || !activeChat || !profile) return;
+    
+    const user1 = profile._id.toString();
+    const user2 = activeChat._id.toString();
+    const consultationId = [user1, user2].sort().join('_');
+
+    const newMsg = {
+      consultationId,
+      senderId: profile._id,
+      receiverId: activeChat._id,
+      text: input,
+      senderRole: "doctor"
+    };
+
     setInput("");
+    socket.emit("send_message", newMsg);
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col h-[calc(100vh-8rem)]">
-      <div className="glass-card p-4 flex items-center justify-between mb-4 mt-2">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">AM</div>
-          <div><h3 className="font-semibold text-sm">Ankit Mehta</h3><p className="text-xs text-success">Online</p></div>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-[calc(100vh-8rem)] glass-card overflow-hidden">
+      
+      {/* Sidebar: Chat List */}
+      <div className="w-80 border-r border-border/50 flex flex-col bg-card/50 shrink-0">
+        <div className="p-4 border-b border-border/50 bg-muted/20">
+          <h3 className="font-semibold px-1">Chats</h3>
         </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon" className="rounded-xl"><Video className="w-4 h-4" /></Button>
+        <div className="flex-1 overflow-y-auto">
+          {conversations.length === 0 && (
+             <p className="p-4 text-xs text-muted-foreground text-center">No active chats.</p>
+          )}
+          {conversations.map(c => (
+             <div key={c._id} onClick={() => setActiveChat(c)} className={`p-4 flex gap-3 cursor-pointer transition-colors border-b border-border/50 ${activeChat?._id === c._id ? 'bg-primary/10 border-l-4 border-l-primary' : 'hover:bg-muted/50 border-l-4 border-l-transparent'}`}>
+               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg shrink-0">
+                  {c.name[0]}
+               </div>
+               <div className="flex-1 min-w-0 flex flex-col justify-center">
+                 <h4 className="font-semibold text-sm truncate">{c.name}</h4>
+                 <p className="text-xs text-muted-foreground truncate mt-0.5">{c.lastMessage || "Start chatting..."}</p>
+               </div>
+             </div>
+          ))}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-3 px-2 mb-4">
-        {messages.map((msg) => (
-          <div key={msg.id} className={`flex ${msg.sender === "doctor" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[75%] p-3.5 rounded-2xl ${
-              msg.sender === "doctor" ? "gradient-primary text-primary-foreground rounded-br-md" : "bg-card border border-border rounded-bl-md"
-            }`}>
-              <p className="text-sm">{msg.text}</p>
-              <p className={`text-xs mt-1 ${msg.sender === "doctor" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{msg.time}</p>
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col min-w-0 bg-background relative">
+        {activeChat ? (
+          <>
+            <div className="h-16 border-b border-border/50 flex items-center justify-between px-6 bg-card/30 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">{activeChat.name[0]}</div>
+                <div>
+                  <h3 className="font-semibold text-sm">{activeChat.name}</h3>
+                  <p className="text-xs text-success flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-success"></span> Online</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="icon" className="rounded-xl hover:bg-primary/10 hover:text-primary"><Video className="w-4 h-4" /></Button>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
 
-      <div className="glass-card p-3 flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="rounded-xl"><Paperclip className="w-4 h-4" /></Button>
-        <Input placeholder="Type a message..." value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} className="rounded-xl border-0 bg-muted/50" />
-        <Button size="icon" onClick={send} className="rounded-xl gradient-primary border-0 text-primary-foreground"><Send className="w-4 h-4" /></Button>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/5">
+              {messages.map((msg: any) => {
+                const isMe = msg.sender === profile._id || msg.senderId === profile._id;
+                return (
+                  <div key={msg._id || msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+                    <div className={`max-w-[75%] p-3.5 rounded-2xl ${isMe ? "gradient-primary text-primary-foreground rounded-br-sm shadow-sm" : "bg-card border border-border rounded-bl-sm shadow-sm"
+                      }`}>
+                      <p className="text-sm leading-relaxed">{msg.text}</p>
+                      <p className={`text-[10px] mt-1.5 text-right ${isMe ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                        {msg.time || new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
+              <div ref={messagesEndRef} />
+            </div>
+
+            <div className="p-4 bg-card border-t border-border/50 flex items-center gap-3 shrink-0">
+              <Button variant="ghost" size="icon" className="rounded-xl text-muted-foreground hover:text-foreground"><Paperclip className="w-5 h-5" /></Button>
+              <Input placeholder="Type a message..." value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} className="rounded-xl border-0 bg-muted h-11" />
+              <Button size="icon" onClick={send} className="rounded-xl gradient-primary border-0 text-primary-foreground h-11 w-11 hover:opacity-90 shadow-sm"><Send className="w-4 h-4" /></Button>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground bg-muted/5">
+             <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+               <MessageSquare className="w-8 h-8 text-primary" />
+             </div>
+             <p className="font-semibold text-foreground">Your Messages</p>
+             <p className="text-sm mt-1">Select a chat from the sidebar to start consulting.</p>
+          </div>
+        )}
       </div>
     </motion.div>
   );

@@ -1,5 +1,7 @@
 const express = require('express');
+const fs = require('fs');
 const mongoose = require('mongoose');
+const Message = require('./models/Message');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const { Server } = require('socket.io');
@@ -12,7 +14,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:5173', // Vite default
+    origin: '*', // Allow all origins for dev
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
   },
 });
@@ -29,6 +31,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/doctors', require('./routes/doctorRoutes'));
 app.use('/api/appointments', require('./routes/appointmentRoutes'));
+app.use('/api/messages', require('./routes/messageRoutes'));
 // Prescription route is handled within appointmentRoutes for now, or we can make a separate route.
 
 
@@ -36,15 +39,42 @@ app.use('/api/appointments', require('./routes/appointmentRoutes'));
 io.on('connection', (socket) => {
   console.log('User connected to socket:', socket.id);
 
-  // Simple signaling
-  socket.on('join_consultation', (consultationId) => {
-    socket.join(consultationId);
-    console.log(`Socket ${socket.id} joined room ${consultationId}`);
+  // Users join their personal room for direct messages
+  socket.on('join_consultation', (userId) => {
+    socket.join(`room_${userId}`);
+    console.log(`Socket ${socket.id} joined personal room room_${userId}`);
   });
 
-  socket.on('send_message', (data) => {
-    // data should contain { consultationId, message }
-    io.to(data.consultationId).emit('receive_message', data);
+  socket.on('send_message', async (data) => {
+    console.log(`Received send_message event from ${socket.id}:`, data);
+    // data should contain { consultationId, senderId, receiverId, text, time }
+    try {
+      const newMessage = new Message({
+        consultationId: data.consultationId,
+        sender: data.senderId,
+        receiver: data.receiverId,
+        text: data.text
+      });
+      await newMessage.save();
+      console.log(`Message saved successfully with id ${newMessage._id} for room ${data.consultationId}`);
+      
+      const msgPayload = {
+        id: newMessage._id,
+        text: newMessage.text,
+        senderId: data.senderId,
+        receiverId: data.receiverId,
+        consultationId: data.consultationId,
+        time: data.time || new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })
+      };
+      
+      // Emit to both sender and receiver personal rooms
+      io.to(`room_${data.receiverId}`).emit('receive_message', msgPayload);
+      io.to(`room_${data.senderId}`).emit('receive_message', msgPayload);
+      console.log(`Broadcasted receive_message to room_${data.receiverId} and room_${data.senderId}`);
+    } catch (err) {
+      console.error('Socket message save error:', err);
+      fs.appendFileSync('socket_error_log.txt', new Date().toISOString() + ' ' + err.stack + '\n');
+    }
   });
 
   socket.on('disconnect', () => {

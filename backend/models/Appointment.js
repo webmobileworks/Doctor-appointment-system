@@ -38,7 +38,8 @@ const appointmentSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  prescriptionFile: String // URL or path to uploaded PDF prescription
+  prescriptionFile: String, // URL or path to uploaded PDF prescription
+  diagnosis: String // Doctor's notes/diagnosis
 }, { timestamps: true });
 
 module.exports = mongoose.model('Appointment', appointmentSchema);

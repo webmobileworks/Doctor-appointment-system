@@ -103,11 +103,21 @@ const uploadPrescription = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
-    if (!req.file) {
-      return res.status(400).json({ message: 'Please upload a file' });
+    if (!req.file && !req.body.diagnosis) {
+      return res.status(400).json({ message: 'Please upload a file or provide diagnosis notes' });
+    }
+    
+    if (req.file) {
+      appointment.prescriptionFile = `/uploads/${req.file.filename}`;
+    }
+    
+    if (req.body.diagnosis) {
+      appointment.diagnosis = req.body.diagnosis;
     }
 
-    appointment.prescriptionFile = `/uploads/${req.file.filename}`;
+    // Auto-complete the appointment when prescription is added
+    appointment.status = 'completed';
+    
     await appointment.save();
 
     res.json(appointment);

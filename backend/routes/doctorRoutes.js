@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { getDoctors, getDoctorById, updateDoctorProfile, getDoctorReviews } = require('../controllers/doctorController');
+const { getDoctors, getDoctorById, updateDoctorProfile, getDoctorReviews, getSpecialties, getTopDoctors } = require('../controllers/doctorController');
 const { protect, doctorOnly } = require('../middleware/auth');
 
 router.get('/', getDoctors);
+router.get('/specialties', getSpecialties);
+router.get('/top', getTopDoctors);
 router.get('/:id', getDoctorById);
 router.get('/:id/reviews', getDoctorReviews);
 router.put('/profile', protect, doctorOnly, updateDoctorProfile);

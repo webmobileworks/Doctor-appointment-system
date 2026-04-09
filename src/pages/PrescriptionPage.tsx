@@ -23,7 +23,7 @@ const PrescriptionPage = () => {
       return;
     }
     // In a real app, opens the S3 or local file URI
-    window.open(`http://localhost:5051${fileUrl}`, "_blank");
+    window.open(`http://localhost:5050${fileUrl}`, "_blank");
     toast.success("Prescription opened!");
   };
 
@@ -36,20 +36,20 @@ const PrescriptionPage = () => {
         <Link to="/profile" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
           <ArrowLeft className="w-4 h-4" /> Back to Profile
         </Link>
-        
+
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">My Prescriptions</h1>
           <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2 rounded-xl">
-             <RefreshCw className="w-3.5 h-3.5" /> Refresh
+            <RefreshCw className="w-3.5 h-3.5" /> Refresh
           </Button>
         </div>
 
         <div className="space-y-5">
           {isLoading ? (
-             <div className="text-center py-12">
-               <div className="w-8 h-8 mx-auto border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
-               <p className="text-muted-foreground">Loading your records...</p>
-             </div>
+            <div className="text-center py-12">
+              <div className="w-8 h-8 mx-auto border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
+              <p className="text-muted-foreground">Loading your records...</p>
+            </div>
           ) : rxAppointments.length === 0 ? (
             <div className="text-center py-12 bg-muted/20 rounded-2xl border border-dashed border-border/50">
               <FileText className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
@@ -67,29 +67,28 @@ const PrescriptionPage = () => {
                       <p className="text-sm text-muted-foreground flex items-center gap-1"><Calendar className="w-3 h-3" />{rx.date} • {rx.time}</p>
                     </div>
                   </div>
-                  <Button 
-                    size="sm" 
-                    variant={rx.prescriptionFile ? "default" : "outline"} 
-                    className={`rounded-xl gap-1.5 ${rx.prescriptionFile ? "gradient-primary text-primary-foreground hover:opacity-90" : ""}`} 
+                  <Button
+                    size="sm"
+                    variant={rx.prescriptionFile ? "default" : "outline"}
+                    className={`rounded-xl gap-1.5 ${rx.prescriptionFile ? "gradient-primary text-primary-foreground hover:opacity-90" : ""}`}
                     onClick={() => handleDownload(rx.prescriptionFile)}
                   >
-                    <Download className="w-3.5 h-3.5" /> {rx.prescriptionFile ? "Download" : "Pending"}
+                    <Download className="w-3.5 h-3.5" /> {rx.prescriptionFile ? "Download" : "Awaiting Presc."}
                   </Button>
                 </div>
 
                 <div className="p-4 rounded-xl bg-muted/30 space-y-3">
                   <div className="flex flex-col gap-1 text-sm">
-                    <span className="text-muted-foreground font-medium">Reported Symptoms:</span>
-                    <span className="font-medium text-foreground">{rx.symptoms || "General Follow-up"}</span>
+                    <span className="text-muted-foreground font-medium">Diagnosis & Notes:</span>
+                    <span className="font-medium text-foreground whitespace-pre-wrap">{rx.diagnosis || rx.symptoms || "General Follow-up"}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground font-medium text-sm block mb-1">Status:</span>
-                    <span className={`px-2.5 py-1 text-xs font-semibold rounded-md uppercase tracking-wider ${
-                        rx.status === "completed" ? "bg-success/10 text-success border border-success/20" : 
-                        rx.status === "confirmed" ? "bg-primary/10 text-primary border border-primary/20" : 
+                    <span className={`px-2.5 py-1 text-xs font-semibold rounded-md uppercase tracking-wider ${rx.status === "completed" ? "bg-success/10 text-success border border-success/20" :
+                      rx.status === "confirmed" ? "bg-primary/10 text-primary border border-primary/20" :
                         "bg-warning/10 text-warning border border-warning/20"
                       }`}>
-                        {rx.status}
+                      {rx.status}
                     </span>
                   </div>
                 </div>

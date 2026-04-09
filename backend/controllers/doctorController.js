@@ -80,9 +80,50 @@ const getDoctorReviews = async (req, res) => {
   }
 };
 
+// @desc    Get unique specialties with doctor counts
+// @route   GET /api/doctors/specialties
+// @access  Public
+const getSpecialties = async (req, res) => {
+  try {
+    const aggregation = await User.aggregate([
+      { $match: { role: 'doctor' } },
+      { $group: {
+          _id: '$doctorDetails.specialty',
+          count: { $sum: 1 }
+      }},
+      { $project: {
+          name: '$_id',
+          count: 1,
+          _id: 0
+      }},
+      { $sort: { count: -1 } }
+    ]);
+    res.json(aggregation);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// @desc    Get top rated doctors
+// @route   GET /api/doctors/top
+// @access  Public
+const getTopDoctors = async (req, res) => {
+  try {
+    const topDoctors = await User.find({ role: 'doctor' })
+      .sort({ 'doctorDetails.rating': -1 })
+      .limit(6)
+      .select('-password');
+    res.json(topDoctors);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
 module.exports = {
   getDoctors,
   getDoctorById,
   updateDoctorProfile,
-  getDoctorReviews
+  getDoctorReviews,
+  getSpecialties,
+  getTopDoctors
 };

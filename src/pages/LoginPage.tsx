@@ -12,9 +12,22 @@ const LoginPage = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("patient");
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Pre-select role if passed in query
+  useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const r = params.get("role");
+    if (r === "doctor") {
+      setRole("doctor");
+      setIsSignup(true);
+    } else if (r === "patient") {
+      setRole("patient");
+    }
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,16 +35,18 @@ const LoginPage = () => {
       toast.error("Please fill in all fields");
       return;
     }
-    
+
     try {
       const fromState = location.state as any;
 
       if (isSignup) {
-        const res = await api.post('/auth/register', { name, email, password, role: 'patient' });
+        const res = await api.post('/auth/register', { name, email, password, role });
         localStorage.setItem('userInfo', JSON.stringify(res.data));
-        toast.success("Account created successfully!");
-        
-        if (fromState?.from) {
+        toast.success(`Account created as ${role}!`);
+
+        if (role === 'doctor') {
+          navigate('/doctor-dashboard');
+        } else if (fromState?.from) {
           navigate(fromState.from, { state: fromState });
         } else {
           navigate('/doctors');
@@ -40,7 +55,7 @@ const LoginPage = () => {
         const res = await api.post('/auth/login', { email, password });
         localStorage.setItem('userInfo', JSON.stringify(res.data));
         toast.success("Login successful!");
-        
+
         if (fromState?.from) {
           navigate(fromState.from, { state: fromState });
         } else if (res.data.role === 'doctor') {
@@ -83,12 +98,30 @@ const LoginPage = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {isSignup && (
-              <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} className="pl-11 h-12 rounded-xl" />
-              </div>
+              <>
+                <div className="flex bg-muted p-1 rounded-xl mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setRole("patient")}
+                    className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${role === 'patient' ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    I am a Patient
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole("doctor")}
+                    className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${role === 'doctor' ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    I am a Doctor
+                  </button>
+                </div>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} className="pl-11 h-12 rounded-xl" />
+                </div>
+              </>
             )}
-            
+
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
