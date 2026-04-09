@@ -14,6 +14,7 @@ import PaymentPage from "./pages/PaymentPage";
 import PrescriptionPage from "./pages/PrescriptionPage";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import ProfilePage from "./pages/ProfilePage";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/prescriptions" element={<PrescriptionPage />} />
           <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/admin" element={<SuperAdminDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
