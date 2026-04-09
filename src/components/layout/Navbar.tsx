@@ -26,9 +26,7 @@ const Navbar = () => {
     <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border/50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">M+</span>
-          </div>
+          <img src="/logo.png" alt="MediBook" className="w-9 h-9 rounded-xl" />
           <span className="text-lg font-bold text-foreground">MediBook</span>
         </Link>
 
