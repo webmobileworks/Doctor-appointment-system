@@ -142,6 +142,7 @@ const SuperAdminDashboard = () => {
   const [doctorSearch, setDoctorSearch] = useState("");
   const [showAddSpecialty, setShowAddSpecialty] = useState(false);
   const [newSpecialty, setNewSpecialty] = useState({ name: "", icon: "", description: "" });
+  const [editingUser, setEditingUser] = useState<any>(null);
 
   const { data: statsData } = useQuery({
     queryKey: ["admin-stats"],
@@ -199,6 +200,24 @@ const SuperAdminDashboard = () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       queryClient.invalidateQueries({ queryKey: ["admin-doctors"] });
       toast.success("Status updated");
+    }
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: ({ id, ...data }: any) => {
+      // Clean data: remove fields that shouldn't be in the body
+      const { _id, createdAt, updatedAt, role, __v, ...cleanData } = data;
+      return api.put(`/admin/users/${id}`, cleanData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-doctors"] });
+      setEditingUser(null);
+      toast.success("User updated successfully");
+    },
+    onError: (error: any) => {
+      console.error('Update Mutation Error:', error);
+      toast.error(error.response?.data?.message || "Failed to update user");
     }
   });
 
@@ -269,36 +288,75 @@ const SuperAdminDashboard = () => {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
           className="glass-card rounded-2xl p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-semibold text-foreground">Specialties</h3>
-              <p className="text-xs text-muted-foreground">Doctor distribution</p>
-            </div>
-            <PieIcon className="w-5 h-5 text-muted-foreground" />
+            <h3 className="font-semibold text-foreground">Appointment Status</h3>
+            <Activity className="w-5 h-5 text-muted-foreground" />
           </div>
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
-              <Pie data={specialtyDistribution} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value">
-                {specialtyDistribution.map((entry, i) => (
+              <Pie data={statsData?.appointmentStatusStats || []} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value">
+                {(statsData?.appointmentStatusStats || []).map((entry: any, i: number) => (
                   <Cell key={i} fill={entry.color} />
                 ))}
               </Pie>
               <Tooltip contentStyle={{ borderRadius: 12, border: "none" }} />
             </PieChart>
           </ResponsiveContainer>
-          <div className="grid grid-cols-2 gap-1.5 mt-2">
-            {specialtyDistribution.slice(0, 4).map((s, i) => (
+          <div className="grid grid-cols-2 gap-2 mt-4">
+            {(statsData?.appointmentStatusStats || []).map((s: any, i: number) => (
               <div key={i} className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full" style={{ background: s.color }} />
-                <span className="text-[11px] text-muted-foreground truncate">{s.name}</span>
+                <div className="w-2 rounded-full h-2" style={{ backgroundColor: s.color }} />
+                <span className="text-[11px] text-muted-foreground">{s.name} ({s.value})</span>
               </div>
             ))}
           </div>
         </motion.div>
       </div>
 
-      {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Recent Activity */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+          className="lg:col-span-2 glass-card rounded-2xl p-4 sm:p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="font-semibold text-foreground">Recent Activity</h3>
+            <Button variant="link" size="sm" className="text-primary h-auto p-0">View all</Button>
+          </div>
+          <div className="space-y-4">
+            {(statsData?.recentActivity || []).map((activity: any) => (
+              <div key={activity.id} className="flex items-start gap-4 p-3 rounded-xl hover:bg-muted/50 transition-colors">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  activity.status === 'completed' ? 'bg-secondary/10 text-secondary' :
+                  activity.status === 'cancelled' ? 'bg-destructive/10 text-destructive' :
+                  'bg-primary/10 text-primary'
+                }`}>
+                  <UserPlus className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {activity.patientName} booked with {activity.doctorName}
+                    </p>
+                    <span className="text-[10px] text-muted-foreground ml-2 shrink-0">
+                      {new Date(activity.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-xs text-muted-foreground truncate">
+                      {activity.date} at {activity.time}
+                    </p>
+                    <Badge variant="outline" className="text-[10px] py-0 h-4 rounded-full">
+                      ₹{activity.amount}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {(statsData?.recentActivity || []).length === 0 && (
+              <p className="text-sm text-center text-muted-foreground py-10">No recent activity</p>
+            )}
+          </div>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
           className="glass-card rounded-2xl p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -306,78 +364,17 @@ const SuperAdminDashboard = () => {
               <p className="text-xs text-muted-foreground">This week's breakdown</p>
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={weeklyAppointments}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(210, 20%, 90%)" />
-              <XAxis dataKey="day" tick={{ fontSize: 12 }} stroke="hsl(215, 15%, 50%)" />
-              <YAxis tick={{ fontSize: 12 }} stroke="hsl(215, 15%, 50%)" />
-              <Tooltip contentStyle={{ borderRadius: 12, border: "none" }} />
-              <Bar dataKey="count" fill="hsl(210, 80%, 50%)" radius={[8, 8, 0, 0]} name="Appointments" />
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={statsData?.weeklyAppointments || []}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(210, 20%, 95%)" />
+              <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+              <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 10px 30px rgba(0,0,0,0.1)" }} />
+              <Bar dataKey="count" fill="hsl(210, 80%, 50%)" radius={[6, 6, 0, 0]} barSize={30} />
             </BarChart>
           </ResponsiveContainer>
         </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-          className="glass-card rounded-2xl p-4 sm:p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-semibold text-foreground">Appointment Status</h3>
-              <p className="text-xs text-muted-foreground">Overall distribution</p>
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={180}>
-            <PieChart>
-              <Pie data={appointmentStatus} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                {appointmentStatus.map((entry, i) => (
-                  <Cell key={i} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={{ borderRadius: 12, border: "none" }} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="flex flex-wrap gap-3 justify-center mt-2">
-            {appointmentStatus.map((s, i) => (
-              <div key={i} className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full" style={{ background: s.color }} />
-                <span className="text-xs text-muted-foreground">{s.name}</span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
       </div>
-
-      {/* Recent Activity */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-        className="glass-card rounded-2xl p-4 sm:p-6">
-        <h3 className="font-semibold text-foreground mb-4">Recent Activity</h3>
-        <div className="space-y-3">
-          {[
-            { text: "New doctor Dr. Neha Kapoor registered", time: "2 min ago", type: "doctor" },
-            { text: "User Rahul Sharma booked an appointment", time: "15 min ago", type: "booking" },
-            { text: "Payment of ₹800 received from Priya Patel", time: "1 hr ago", type: "payment" },
-            { text: "New user Vikram Singh signed up", time: "2 hr ago", type: "user" },
-            { text: "Dr. Arun Mehta updated availability", time: "3 hr ago", type: "doctor" },
-          ].map((item, i) => (
-            <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                item.type === "doctor" ? "bg-primary/10 text-primary" :
-                item.type === "booking" ? "bg-secondary/10 text-secondary" :
-                item.type === "payment" ? "bg-[hsl(30,80%,55%)]/10 text-[hsl(30,80%,55%)]" :
-                "bg-[hsl(280,60%,55%)]/10 text-[hsl(280,60%,55%)]"
-              }`}>
-                {item.type === "doctor" ? <Stethoscope className="w-4 h-4" /> :
-                 item.type === "booking" ? <Calendar className="w-4 h-4" /> :
-                 item.type === "payment" ? <DollarSign className="w-4 h-4" /> :
-                 <UserPlus className="w-4 h-4" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-foreground truncate">{item.text}</p>
-                <p className="text-xs text-muted-foreground">{item.time}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </motion.div>
     </div>
   );
 
@@ -386,7 +383,7 @@ const SuperAdminDashboard = () => {
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-foreground">User Management</h2>
-          <p className="text-sm text-muted-foreground">{mockUsers.length} registered users</p>
+          <p className="text-sm text-muted-foreground">{usersData.length} registered users</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <div className="relative flex-1 sm:w-64">
@@ -432,7 +429,7 @@ const SuperAdminDashboard = () => {
             </div>
             <div className="flex gap-2 mt-3">
               <Button variant="outline" size="sm" className="flex-1 rounded-xl text-xs h-8"><Eye className="w-3 h-3 mr-1" />View</Button>
-              <Button variant="outline" size="sm" className="flex-1 rounded-xl text-xs h-8"><Edit className="w-3 h-3 mr-1" />Edit</Button>
+              <Button variant="outline" size="sm" onClick={() => setEditingUser(user)} className="flex-1 rounded-xl text-xs h-8"><Edit className="w-3 h-3 mr-1" />Edit</Button>
               <Button variant="outline" size="sm" className="rounded-xl text-xs h-8 text-destructive hover:text-destructive"><Trash2 className="w-3 h-3" /></Button>
             </div>
           </motion.div>
@@ -483,7 +480,7 @@ const SuperAdminDashboard = () => {
                       ) : (
                         <Button variant="ghost" size="icon" onClick={() => updateStatusMutation.mutate({ id: user._id, status: 'active' })} className="h-8 w-8 rounded-xl text-success hover:text-success"><Shield className="w-4 h-4" /></Button>
                       )}
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl"><Edit className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => setEditingUser(user)} className="h-8 w-8 rounded-xl"><Edit className="w-4 h-4" /></Button>
                     </div>
                   </td>
                 </motion.tr>
@@ -500,7 +497,7 @@ const SuperAdminDashboard = () => {
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-foreground">Doctor Management</h2>
-          <p className="text-sm text-muted-foreground">{mockDoctors.length} registered doctors</p>
+          <p className="text-sm text-muted-foreground">{doctorsData.length} registered doctors</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <div className="relative flex-1 sm:w-64">
@@ -554,7 +551,7 @@ const SuperAdminDashboard = () => {
             </div>
             <div className="flex gap-2 mt-3">
               <Button variant="outline" size="sm" className="flex-1 rounded-xl text-xs h-8"><Eye className="w-3 h-3 mr-1" />View</Button>
-              <Button variant="outline" size="sm" className="flex-1 rounded-xl text-xs h-8"><Edit className="w-3 h-3 mr-1" />Edit</Button>
+              <Button variant="outline" size="sm" onClick={() => setEditingUser(doc)} className="flex-1 rounded-xl text-xs h-8"><Edit className="w-3 h-3 mr-1" />Edit</Button>
               <Button variant="outline" size="sm" className="rounded-xl text-xs h-8 text-destructive hover:text-destructive"><Trash2 className="w-3 h-3" /></Button>
             </div>
           </motion.div>
@@ -607,7 +604,7 @@ const SuperAdminDashboard = () => {
                       ) : (
                         <Button variant="ghost" size="icon" onClick={() => updateStatusMutation.mutate({ id: doc._id, status: 'active' })} className="h-8 w-8 rounded-xl text-success hover:text-success" title="Activate"><Shield className="w-4 h-4" /></Button>
                       )}
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl"><Edit className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => setEditingUser(doc)} className="h-8 w-8 rounded-xl"><Edit className="w-4 h-4" /></Button>
                     </div>
                   </td>
                 </motion.tr>
@@ -738,9 +735,70 @@ const SuperAdminDashboard = () => {
     </div>
   );
 
+  const renderEditModal = () => {
+    if (!editingUser) return null;
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+          className="glass-card w-full max-w-md rounded-2xl p-6 shadow-2xl border border-primary/20">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-foreground">Edit User Details</h3>
+            <Button variant="ghost" size="icon" onClick={() => setEditingUser(null)} className="rounded-xl">
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-muted-foreground ml-1">Full Name</label>
+              <Input value={editingUser.name} onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                className="rounded-xl bg-muted/50 border-border/50" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-muted-foreground ml-1">Email Address</label>
+              <Input value={editingUser.email} onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                className="rounded-xl bg-muted/50 border-border/50" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-muted-foreground ml-1">Phone Number</label>
+              <Input value={editingUser.phone || ""} onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })}
+                className="rounded-xl bg-muted/50 border-border/50" placeholder="+91 ..." />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-muted-foreground ml-1">Status</label>
+              <div className="flex gap-2">
+                {['active', 'suspended', 'pending'].map((s) => (
+                  <Button key={s} variant={editingUser.status === s ? 'default' : 'outline'} size="sm"
+                    onClick={() => setEditingUser({ ...editingUser, status: s })}
+                    className="rounded-full text-[10px] capitalize h-7 flex-1">
+                    {s}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3 mt-8">
+            <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setEditingUser(null)}>Cancel</Button>
+            <Button className="flex-1 rounded-xl gradient-primary border-0 text-primary-foreground"
+              disabled={updateUserMutation.isPending}
+              onClick={() => {
+                const id = editingUser._id || editingUser.id;
+                if (!id) return toast.error("User ID missing!");
+                updateUserMutation.mutate({ id, ...editingUser });
+              }}>
+              {updateUserMutation.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+      {renderEditModal()}
 
       <div className="flex">
         {/* Desktop Sidebar */}

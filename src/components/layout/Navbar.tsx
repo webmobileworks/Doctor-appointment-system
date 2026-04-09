@@ -33,7 +33,7 @@ const Navbar = () => {
         </Link>
 
         <div className="hidden md:flex items-center gap-1">
-          {navLinks.map((link) => (
+          {user?.role !== 'admin' && navLinks.map((link) => (
             <Link
               key={link.path}
               to={link.path}
