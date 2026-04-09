@@ -7,9 +7,7 @@ const Footer = () => (
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
         <div>
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">M+</span>
-            </div>
+            <img src="/logo.png" alt="MediBook" className="w-9 h-9 rounded-xl" loading="lazy" />
             <span className="text-lg font-bold">MediBook</span>
           </div>
           <p className="text-sm text-muted-foreground">Your trusted healthcare partner for booking appointments with top doctors.</p>
