@@ -46,6 +46,8 @@ const LoginPage = () => {
 
         if (role === 'doctor') {
           navigate('/doctor-dashboard');
+        } else if (role === 'admin') {
+          navigate('/admin');
         } else if (fromState?.from) {
           navigate(fromState.from, { state: fromState });
         } else {
@@ -58,6 +60,8 @@ const LoginPage = () => {
 
         if (fromState?.from) {
           navigate(fromState.from, { state: fromState });
+        } else if (res.data.role === 'admin') {
+          navigate('/admin');
         } else if (res.data.role === 'doctor') {
           navigate('/doctor-dashboard');
         } else {

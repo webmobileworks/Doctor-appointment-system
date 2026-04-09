@@ -14,6 +14,9 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
 import Navbar from "@/components/layout/Navbar";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "@/lib/api";
+import { toast } from "sonner";
 
 // Mock data
 const monthlyData = [
@@ -75,6 +78,25 @@ const defaultSpecialties = [
   { id: 8, name: "ENT", icon: "👂", doctorCount: 9, description: "Ear, nose, and throat" },
 ];
 
+const AVAILABLE_ICONS = [
+  { label: "Heart", icon: "❤️" },
+  { label: "Brain", icon: "🧠" },
+  { label: "Bone", icon: "🦴" },
+  { label: "Tooth", icon: "🦷" },
+  { label: "Eye", icon: "👁️" },
+  { label: "Stethoscope", icon: "🩺" },
+  { label: "Medicine", icon: "💊" },
+  { label: "Syringe", icon: "💉" },
+  { label: "Biohazard", icon: "☣️" },
+  { label: "Microscope", icon: "🔬" },
+  { label: "Thermometer", icon: "🌡️" },
+  { label: "Lungs", icon: "🫁" },
+  { label: "Skin", icon: "🧴" },
+  { label: "Baby", icon: "👶" },
+  { label: "Ear", icon: "👂" },
+  { label: "Kidney", icon: "🩹" },
+];
+
 const sidebarItems = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { key: "users", label: "Users", icon: Users },
@@ -113,44 +135,101 @@ const StatCard = ({ title, value, change, changeType, icon: Icon, color }: any) 
 );
 
 const SuperAdminDashboard = () => {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userSearch, setUserSearch] = useState("");
   const [doctorSearch, setDoctorSearch] = useState("");
-  const [specialties, setSpecialties] = useState(defaultSpecialties);
   const [showAddSpecialty, setShowAddSpecialty] = useState(false);
   const [newSpecialty, setNewSpecialty] = useState({ name: "", icon: "", description: "" });
 
-  const filteredUsers = mockUsers.filter(u =>
+  const { data: statsData } = useQuery({
+    queryKey: ["admin-stats"],
+    queryFn: async () => {
+      const res = await api.get("/admin/stats");
+      return res.data;
+    }
+  });
+
+  const { data: usersData = [] } = useQuery({
+    queryKey: ["admin-users"],
+    queryFn: async () => {
+      const res = await api.get("/admin/users");
+      return res.data;
+    }
+  });
+
+  const { data: doctorsData = [] } = useQuery({
+    queryKey: ["admin-doctors"],
+    queryFn: async () => {
+      const res = await api.get("/admin/doctors");
+      return res.data;
+    }
+  });
+
+  const { data: apiSpecialties = [] } = useQuery({
+    queryKey: ["admin-specialties"],
+    queryFn: async () => {
+      const res = await api.get("/admin/specialties");
+      return res.data;
+    }
+  });
+
+  const deleteSpecialtyMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/admin/specialties/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-specialties"] });
+      toast.success("Specialty removed");
+    }
+  });
+
+  const addSpecialtyMutation = useMutation({
+    mutationFn: (data: any) => api.post("/admin/specialties", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-specialties"] });
+      setShowAddSpecialty(false);
+      setNewSpecialty({ name: "", icon: "", description: "" });
+      toast.success("Specialty added");
+    }
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: any) => api.put(`/admin/users/${id}/status`, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-doctors"] });
+      toast.success("Status updated");
+    }
+  });
+
+  const filteredUsers = usersData.filter((u: any) =>
     u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
     u.email.toLowerCase().includes(userSearch.toLowerCase())
   );
 
-  const filteredDoctors = mockDoctors.filter(d =>
+  const filteredDoctors = doctorsData.filter((d: any) =>
     d.name.toLowerCase().includes(doctorSearch.toLowerCase()) ||
-    d.specialty.toLowerCase().includes(doctorSearch.toLowerCase())
+    (d.doctorDetails?.specialty || "").toLowerCase().includes(doctorSearch.toLowerCase())
   );
 
   const handleAddSpecialty = () => {
     if (newSpecialty.name) {
-      setSpecialties([...specialties, { id: specialties.length + 1, ...newSpecialty, doctorCount: 0 }]);
-      setNewSpecialty({ name: "", icon: "", description: "" });
-      setShowAddSpecialty(false);
+      addSpecialtyMutation.mutate(newSpecialty);
     }
   };
 
-  const handleDeleteSpecialty = (id: number) => {
-    setSpecialties(specialties.filter(s => s.id !== id));
+  const handleDeleteSpecialty = (id: string) => {
+    deleteSpecialtyMutation.mutate(id);
   };
 
   const renderDashboard = () => (
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <StatCard title="Total Users" value="2,540" change="+12.5%" changeType="up" icon={Users} color="gradient-primary" />
-        <StatCard title="Total Doctors" value="185" change="+8.2%" changeType="up" icon={Stethoscope} color="bg-secondary" />
-        <StatCard title="Appointments" value="1,350" change="+22.4%" changeType="up" icon={Calendar} color="bg-[hsl(280,60%,55%)]" />
-        <StatCard title="Revenue" value="₹14.8L" change="-3.1%" changeType="down" icon={DollarSign} color="bg-[hsl(30,80%,55%)]" />
+        <StatCard title="Total Users" value={statsData?.cards?.totalUsers || 0} change="+0%" changeType="up" icon={Users} color="gradient-primary" />
+        <StatCard title="Total Doctors" value={statsData?.cards?.totalDoctors || 0} change="+0%" changeType="up" icon={Stethoscope} color="bg-secondary" />
+        <StatCard title="Appointments" value={statsData?.cards?.totalAppointments || 0} change="+0%" changeType="up" icon={Calendar} color="bg-[hsl(280,60%,55%)]" />
+        <StatCard title="Revenue" value={`₹${(statsData?.cards?.totalRevenue || 0).toLocaleString()}`} change="+0%" changeType="up" icon={DollarSign} color="bg-[hsl(30,80%,55%)]" />
       </div>
 
       {/* Charts Row 1 */}
@@ -165,7 +244,7 @@ const SuperAdminDashboard = () => {
             <BarChart3 className="w-5 h-5 text-muted-foreground" />
           </div>
           <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={monthlyData}>
+            <AreaChart data={statsData?.monthlyTrends || []}>
               <defs>
                 <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="hsl(210, 80%, 50%)" stopOpacity={0.3} />
@@ -375,8 +454,8 @@ const SuperAdminDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map((user, i) => (
-                <motion.tr key={user.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.05 }}
+              {filteredUsers.map((user: any, i: number) => (
+                <motion.tr key={user._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.05 }}
                   className="border-b border-border/30 hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
@@ -389,9 +468,9 @@ const SuperAdminDashboard = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">{user.phone}</td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">{new Date(user.joinDate).toLocaleDateString()}</td>
-                  <td className="px-4 py-3 text-sm font-medium text-foreground">{user.appointments}</td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">{user.phone || "N/A"}</td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">{new Date(user.createdAt).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 text-sm font-medium text-foreground">0</td>
                   <td className="px-4 py-3">
                     <Badge variant={user.status === "active" ? "default" : "secondary"} className="rounded-full text-xs">
                       {user.status}
@@ -399,9 +478,12 @@ const SuperAdminDashboard = () => {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl"><Eye className="w-4 h-4" /></Button>
+                      {user.status === 'active' ? (
+                        <Button variant="ghost" size="icon" onClick={() => updateStatusMutation.mutate({ id: user._id, status: 'suspended' })} className="h-8 w-8 rounded-xl text-destructive hover:text-destructive"><Shield className="w-4 h-4" /></Button>
+                      ) : (
+                        <Button variant="ghost" size="icon" onClick={() => updateStatusMutation.mutate({ id: user._id, status: 'active' })} className="h-8 w-8 rounded-xl text-success hover:text-success"><Shield className="w-4 h-4" /></Button>
+                      )}
                       <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl"><Edit className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-destructive hover:text-destructive"><Trash2 className="w-4 h-4" /></Button>
                     </div>
                   </td>
                 </motion.tr>
@@ -495,8 +577,8 @@ const SuperAdminDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredDoctors.map((doc, i) => (
-                <motion.tr key={doc.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.05 }}
+              {filteredDoctors.map((doc: any, i: number) => (
+                <motion.tr key={doc._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.05 }}
                   className="border-b border-border/30 hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
@@ -505,24 +587,27 @@ const SuperAdminDashboard = () => {
                       </div>
                       <div>
                         <p className="text-sm font-medium text-foreground">{doc.name}</p>
-                        <p className="text-xs text-muted-foreground">{doc.location}</p>
+                        <p className="text-xs text-muted-foreground">{doc.doctorDetails?.location || "N/A"}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">{doc.specialty}</td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">{doc.experience} yrs</td>
-                  <td className="px-4 py-3 text-sm font-medium text-foreground">⭐ {doc.rating}</td>
-                  <td className="px-4 py-3 text-sm text-foreground">₹{doc.fees}</td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">{doc.doctorDetails?.specialty}</td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">{doc.doctorDetails?.experience || 0} yrs</td>
+                  <td className="px-4 py-3 text-sm font-medium text-foreground">⭐ {doc.doctorDetails?.rating || 0}</td>
+                  <td className="px-4 py-3 text-sm text-foreground">₹{doc.doctorDetails?.fees || 0}</td>
                   <td className="px-4 py-3">
-                    <Badge variant={doc.status === "verified" ? "default" : doc.status === "pending" ? "secondary" : "destructive"} className="rounded-full text-xs">
+                    <Badge variant={doc.status === "active" ? "default" : doc.status === "inactive" ? "secondary" : "destructive"} className="rounded-full text-xs">
                       {doc.status}
                     </Badge>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl"><Eye className="w-4 h-4" /></Button>
+                      {doc.status === 'active' ? (
+                        <Button variant="ghost" size="icon" onClick={() => updateStatusMutation.mutate({ id: doc._id, status: 'suspended' })} className="h-8 w-8 rounded-xl text-destructive hover:text-destructive" title="Suspend"><Shield className="w-4 h-4" /></Button>
+                      ) : (
+                        <Button variant="ghost" size="icon" onClick={() => updateStatusMutation.mutate({ id: doc._id, status: 'active' })} className="h-8 w-8 rounded-xl text-success hover:text-success" title="Activate"><Shield className="w-4 h-4" /></Button>
+                      )}
                       <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl"><Edit className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-destructive hover:text-destructive"><Trash2 className="w-4 h-4" /></Button>
                     </div>
                   </td>
                 </motion.tr>
@@ -557,13 +642,40 @@ const SuperAdminDashboard = () => {
                 <X className="w-4 h-4" />
               </Button>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <Input placeholder="Specialty name" value={newSpecialty.name} onChange={(e) => setNewSpecialty({ ...newSpecialty, name: e.target.value })}
-                className="rounded-xl bg-muted/50" />
-              <Input placeholder="Icon (emoji)" value={newSpecialty.icon} onChange={(e) => setNewSpecialty({ ...newSpecialty, icon: e.target.value })}
-                className="rounded-xl bg-muted/50" />
-              <Input placeholder="Description" value={newSpecialty.description} onChange={(e) => setNewSpecialty({ ...newSpecialty, description: e.target.value })}
-                className="rounded-xl bg-muted/50" />
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground ml-1">Specialty Name</label>
+                  <Input placeholder="e.g. Cardiology" value={newSpecialty.name} onChange={(e) => setNewSpecialty({ ...newSpecialty, name: e.target.value })}
+                    className="rounded-xl bg-muted/50" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground ml-1">Description</label>
+                  <Input placeholder="Short description..." value={newSpecialty.description} onChange={(e) => setNewSpecialty({ ...newSpecialty, description: e.target.value })}
+                    className="rounded-xl bg-muted/50" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground ml-1">Select Icon</label>
+                <div className="flex flex-wrap gap-2 p-3 rounded-xl bg-muted/30 border border-border/50">
+                  {AVAILABLE_ICONS.map((item) => (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onClick={() => setNewSpecialty({ ...newSpecialty, icon: item.icon })}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-all ${
+                        newSpecialty.icon === item.icon 
+                        ? "bg-primary text-primary-foreground scale-110 shadow-lg" 
+                        : "bg-background hover:bg-muted border border-border/50"
+                      }`}
+                      title={item.label}
+                    >
+                      {item.icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
             <div className="flex justify-end mt-4">
               <Button onClick={handleAddSpecialty} className="rounded-xl gradient-primary border-0 text-primary-foreground">
@@ -576,8 +688,8 @@ const SuperAdminDashboard = () => {
 
       {/* Specialty Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-        {specialties.map((spec, i) => (
-          <motion.div key={spec.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}
+        {apiSpecialties.map((spec: any, i: number) => (
+          <motion.div key={spec._id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}
             className="glass-card rounded-2xl p-4 hover:shadow-lg transition-all group">
             <div className="flex items-start justify-between">
               <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-2xl">
@@ -586,7 +698,7 @@ const SuperAdminDashboard = () => {
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg"><Edit className="w-3.5 h-3.5" /></Button>
                 <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-destructive hover:text-destructive"
-                  onClick={() => handleDeleteSpecialty(spec.id)}>
+                  onClick={() => handleDeleteSpecialty(spec._id)}>
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
               </div>
@@ -595,7 +707,7 @@ const SuperAdminDashboard = () => {
             <p className="text-xs text-muted-foreground mt-1">{spec.description}</p>
             <div className="mt-3 flex items-center gap-1.5">
               <Stethoscope className="w-3.5 h-3.5 text-primary" />
-              <span className="text-xs font-medium text-primary">{spec.doctorCount} doctors</span>
+              <span className="text-xs font-medium text-primary">{spec.doctorCount || 0} doctors</span>
             </div>
           </motion.div>
         ))}

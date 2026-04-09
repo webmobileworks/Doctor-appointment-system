@@ -15,6 +15,7 @@ import PrescriptionPage from "./pages/PrescriptionPage";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import ProfilePage from "./pages/ProfilePage";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
+import ProtectedRoute from "./components/shared/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -29,13 +30,20 @@ const App = () => (
           <Route path="/doctors" element={<DoctorListing />} />
           <Route path="/doctor/:id" element={<DoctorProfile />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/booking/:id" element={<BookingPage />} />
-          <Route path="/consultation" element={<ConsultationPage />} />
-          <Route path="/payment" element={<PaymentPage />} />
-          <Route path="/prescriptions" element={<PrescriptionPage />} />
-          <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/admin" element={<SuperAdminDashboard />} />
+          
+          {/* Protected Routes */}
+          <Route path="/booking/:id" element={<ProtectedRoute><BookingPage /></ProtectedRoute>} />
+          <Route path="/consultation" element={<ProtectedRoute><ConsultationPage /></ProtectedRoute>} />
+          <Route path="/payment" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          
+          {/* Doctor Only Routes */}
+          <Route path="/doctor-dashboard" element={<ProtectedRoute requiredRole="doctor"><DoctorDashboard /></ProtectedRoute>} />
+          <Route path="/prescriptions" element={<ProtectedRoute requiredRole="doctor"><PrescriptionPage /></ProtectedRoute>} />
+          
+          {/* Admin Only Routes */}
+          <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><SuperAdminDashboard /></ProtectedRoute>} />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
