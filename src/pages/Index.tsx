@@ -136,11 +136,9 @@ const Index = () => {
         </motion.div>
       </section>
 
-      <StatsCounterSection />
       <WhyChooseUsSection />
       <TestimonialsSection />
       <HealthTipsSection />
-      <AppDownloadSection />
 
       {/* CTA */}
       <section className="container mx-auto px-4 py-10 sm:py-16">
