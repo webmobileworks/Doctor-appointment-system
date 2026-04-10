@@ -298,50 +298,81 @@ const ProfileView = ({ profile, updateMutation, specialties }: any) => {
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl space-y-6">
-      <div className="glass-card p-6 space-y-5">
-        <h3 className="font-semibold">Profile Information</h3>
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-20 h-20 rounded-2xl flex items-center justify-center font-bold text-xl overflow-hidden relative">
-            {preview ? (
-              <img src={preview.startsWith('blob:') ? preview : `http://localhost:5050${profile.doctorDetails.image}`} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full gradient-primary flex items-center justify-center text-primary-foreground">
-                {profile.name[0]}
-              </div>
-            )}
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl space-y-6">
+      {/* Photo Section */}
+      <div className="glass-card p-6">
+        <h3 className="font-semibold mb-5 flex items-center gap-2">
+          <User className="w-4 h-4 text-primary" /> Profile Information
+        </h3>
+        <div className="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-2xl bg-muted/20">
+          <div className="relative group">
+            <div className="w-24 h-24 rounded-2xl flex items-center justify-center font-bold text-xl overflow-hidden ring-4 ring-primary/10 shadow-lg">
+              {preview ? (
+                <img src={preview.startsWith('blob:') ? preview : `http://localhost:5050${profile.doctorDetails.image}`} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full gradient-primary flex items-center justify-center text-primary-foreground text-2xl">
+                  {profile.name[0]}
+                </div>
+              )}
+            </div>
+            <div className="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+              <span className="text-white text-xs font-medium">Change</span>
+            </div>
           </div>
-          <div className="relative">
-            <input type="file" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" />
-            <Button variant="outline" size="sm" className="rounded-xl pointer-events-none">Change Photo</Button>
+          <div className="text-center sm:text-left">
+            <p className="font-semibold">{profile.name}</p>
+            <p className="text-sm text-muted-foreground">{profile.doctorDetails?.specialty || "Doctor"}</p>
+            <div className="relative mt-2">
+              <input type="file" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" />
+              <Button variant="outline" size="sm" className="rounded-xl pointer-events-none gap-1.5 text-xs">
+                <Upload className="w-3 h-3" /> Change Photo
+              </Button>
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* Form */}
+      <div className="glass-card p-6 space-y-5">
+        <h3 className="font-semibold flex items-center gap-2">
+          <Settings className="w-4 h-4 text-primary" /> Edit Details
+        </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div><label className="text-xs text-muted-foreground">Full Name</label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="mt-1 rounded-xl" /></div>
-          <div>
-            <label className="text-xs text-muted-foreground">Specialty</label>
-            <Select 
-              value={form.specialty} 
-              onValueChange={(value) => setForm({ ...form, specialty: value })}
-            >
-              <SelectTrigger className="mt-1 rounded-xl h-11">
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground font-medium">Full Name</label>
+            <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="rounded-xl h-11" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground font-medium">Specialty</label>
+            <Select value={form.specialty} onValueChange={(value) => setForm({ ...form, specialty: value })}>
+              <SelectTrigger className="rounded-xl h-11">
                 <SelectValue placeholder="Select Specialty" />
               </SelectTrigger>
               <SelectContent>
                 {specialties.map((spec: any) => (
-                  <SelectItem key={spec._id || spec.name} value={spec.name}>
-                    {spec.name}
-                  </SelectItem>
+                  <SelectItem key={spec._id || spec.name} value={spec.name}>{spec.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <div><label className="text-xs text-muted-foreground">Experience (Years)</label><Input type="number" value={form.experience} onChange={e => setForm({ ...form, experience: e.target.value })} className="mt-1 rounded-xl" /></div>
-          <div><label className="text-xs text-muted-foreground">Fees (₹)</label><Input type="number" value={form.fees} onChange={e => setForm({ ...form, fees: e.target.value })} className="mt-1 rounded-xl" /></div>
-          <div className="sm:col-span-2"><label className="text-xs text-muted-foreground">Qualification</label><Input value={form.qualification} onChange={e => setForm({ ...form, qualification: e.target.value })} className="mt-1 rounded-xl" /></div>
-          <div className="sm:col-span-2"><label className="text-xs text-muted-foreground">About</label><Textarea value={form.about} onChange={e => setForm({ ...form, about: e.target.value })} className="mt-1 rounded-xl" /></div>
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground font-medium">Experience (Years)</label>
+            <Input type="number" value={form.experience} onChange={e => setForm({ ...form, experience: e.target.value })} className="rounded-xl h-11" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground font-medium">Fees (₹)</label>
+            <Input type="number" value={form.fees} onChange={e => setForm({ ...form, fees: e.target.value })} className="rounded-xl h-11" />
+          </div>
+          <div className="sm:col-span-2 space-y-1.5">
+            <label className="text-xs text-muted-foreground font-medium">Qualification</label>
+            <Input value={form.qualification} onChange={e => setForm({ ...form, qualification: e.target.value })} className="rounded-xl h-11" />
+          </div>
+          <div className="sm:col-span-2 space-y-1.5">
+            <label className="text-xs text-muted-foreground font-medium">About</label>
+            <Textarea value={form.about} onChange={e => setForm({ ...form, about: e.target.value })} className="rounded-xl min-h-[120px] resize-none" placeholder="Tell patients about yourself..." />
+          </div>
         </div>
-        <Button onClick={handleSave} disabled={updateMutation.isPending} className="rounded-xl gradient-primary border-0 text-primary-foreground gap-2">
+        <Button onClick={handleSave} disabled={updateMutation.isPending} className="rounded-xl gradient-primary border-0 text-primary-foreground gap-2 h-11 px-6 shadow-md">
           <Save className="w-4 h-4" /> {updateMutation.isPending ? "Saving..." : "Save Changes"}
         </Button>
       </div>
