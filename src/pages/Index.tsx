@@ -74,29 +74,6 @@ const Index = () => {
                 Book appointments with verified doctors, get online consultations, and manage your health — all in one place.
               </p>
 
-              <div className="flex flex-col gap-3 mb-6 sm:mb-8">
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search doctors, specialties..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-11 h-12 rounded-xl border-border/50 bg-card/80 backdrop-blur-sm"
-                    />
-                  </div>
-                  <div className="relative flex-1 sm:max-w-[200px]">
-                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input placeholder="Location" className="pl-11 h-12 rounded-xl border-border/50 bg-card/80 backdrop-blur-sm" />
-                  </div>
-                </div>
-                <Link to="/doctors" className="w-full sm:w-auto">
-                  <Button className="w-full sm:w-auto h-12 px-6 rounded-xl gradient-primary border-0 text-primary-foreground">
-                    Search
-                  </Button>
-                </Link>
-              </div>
-
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {stats.map((stat) => (
                   <div key={stat.label} className="text-center">

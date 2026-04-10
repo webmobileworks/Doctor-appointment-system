@@ -10,6 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import api from "@/lib/api";
 import { io, Socket } from "socket.io-client";
 
@@ -61,6 +68,15 @@ const DoctorDashboard = () => {
     queryKey: ['doctor-appointments'],
     queryFn: async () => {
       const res = await api.get('/appointments');
+      return res.data;
+    }
+  });
+
+  // Fetch specialties for the dropdown
+  const { data: specialties = [] } = useQuery({
+    queryKey: ['api-specialties'],
+    queryFn: async () => {
+      const res = await api.get('/doctors/specialties');
       return res.data;
     }
   });
@@ -160,7 +176,7 @@ const DoctorDashboard = () => {
 
         <div className="flex-1 overflow-y-auto p-6">
           {activeTab === "dashboard" && <DashboardView appointments={appointments} />}
-          {activeTab === "profile" && <ProfileView profile={profile} updateMutation={updateProfileMutation} />}
+          {activeTab === "profile" && <ProfileView profile={profile} updateMutation={updateProfileMutation} specialties={specialties} />}
           {activeTab === "availability" && <AvailabilityView profile={profile} updateMutation={updateProfileMutation} />}
           {activeTab === "appointments" && <AppointmentsView appointments={appointments} statusMutation={updateStatusMutation} />}
           {activeTab === "consultation" && <DoctorConsultationView profile={profile} />}
@@ -237,7 +253,7 @@ const DashboardView = ({ appointments }: any) => {
   );
 };
 
-const ProfileView = ({ profile, updateMutation }: any) => {
+const ProfileView = ({ profile, updateMutation, specialties }: any) => {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(profile?.doctorDetails?.image ? `http://localhost:5050${profile.doctorDetails.image}` : null);
 
@@ -302,7 +318,24 @@ const ProfileView = ({ profile, updateMutation }: any) => {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div><label className="text-xs text-muted-foreground">Full Name</label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="mt-1 rounded-xl" /></div>
-          <div><label className="text-xs text-muted-foreground">Specialty</label><Input value={form.specialty} onChange={e => setForm({ ...form, specialty: e.target.value })} className="mt-1 rounded-xl" /></div>
+          <div>
+            <label className="text-xs text-muted-foreground">Specialty</label>
+            <Select 
+              value={form.specialty} 
+              onValueChange={(value) => setForm({ ...form, specialty: value })}
+            >
+              <SelectTrigger className="mt-1 rounded-xl h-11">
+                <SelectValue placeholder="Select Specialty" />
+              </SelectTrigger>
+              <SelectContent>
+                {specialties.map((spec: any) => (
+                  <SelectItem key={spec._id || spec.name} value={spec.name}>
+                    {spec.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div><label className="text-xs text-muted-foreground">Experience (Years)</label><Input type="number" value={form.experience} onChange={e => setForm({ ...form, experience: e.target.value })} className="mt-1 rounded-xl" /></div>
           <div><label className="text-xs text-muted-foreground">Fees (₹)</label><Input type="number" value={form.fees} onChange={e => setForm({ ...form, fees: e.target.value })} className="mt-1 rounded-xl" /></div>
           <div className="sm:col-span-2"><label className="text-xs text-muted-foreground">Qualification</label><Input value={form.qualification} onChange={e => setForm({ ...form, qualification: e.target.value })} className="mt-1 rounded-xl" /></div>

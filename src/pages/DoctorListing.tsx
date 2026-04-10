@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useSearchParams } from "react-router-dom";
 import { Search, MapPin, SlidersHorizontal, Grid3X3, List, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,10 +13,38 @@ import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
 
 const DoctorListing = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [layout, setLayout] = useState<"grid" | "list">("grid");
   const [search, setSearch] = useState("");
-  const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
+  const initialSpec = searchParams.get("specialty");
+  const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(initialSpec);
   const [showFilters, setShowFilters] = useState(false);
+
+  // Sync state with URL params
+  useEffect(() => {
+    const spec = searchParams.get("specialty");
+    if (spec) setSelectedSpecialty(spec);
+  }, [searchParams]);
+
+  // Update URL when specialty changes
+  const handleSpecialtyChange = (spec: string | null) => {
+    setSelectedSpecialty(spec);
+    if (spec) {
+      setSearchParams({ specialty: spec });
+    } else {
+      setSearchParams({});
+    }
+  };
+
+  // Fetch specialties from API for filter list
+  const { data: apiSpecialties = [] } = useQuery({
+    queryKey: ['api-specialties'],
+    queryFn: async () => {
+      const res = await api.get('/doctors/specialties');
+      return res.data;
+    }
+  });
+
 
   const { data: filtered = [], isLoading } = useQuery({
     queryKey: ['doctors', search, selectedSpecialty],
@@ -86,10 +115,10 @@ const DoctorListing = () => {
             <div className="glass-card p-4">
               <h3 className="text-sm font-semibold mb-3">Specialty</h3>
               <div className="flex flex-wrap gap-2">
-                {specialties.map((s) => (
+                {apiSpecialties.map((s: any) => (
                   <button
                     key={s.name}
-                    onClick={() => setSelectedSpecialty(selectedSpecialty === s.name ? null : s.name)}
+                    onClick={() => handleSpecialtyChange(selectedSpecialty === s.name ? null : s.name)}
                     className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                       selectedSpecialty === s.name ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"
                     }`}
@@ -107,7 +136,7 @@ const DoctorListing = () => {
             <span className="text-sm text-muted-foreground">Filtered by:</span>
             <span className="px-3 py-1 rounded-lg bg-primary/10 text-primary text-sm flex items-center gap-1">
               {selectedSpecialty}
-              <button onClick={() => setSelectedSpecialty(null)}><X className="w-3 h-3" /></button>
+              <button onClick={() => handleSpecialtyChange(null)}><X className="w-3 h-3" /></button>
             </span>
           </div>
         )}

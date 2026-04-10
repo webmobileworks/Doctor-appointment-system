@@ -73,7 +73,8 @@ const DoctorProfile = () => {
     return <div className="min-h-screen flex items-center justify-center">Doctor not found.</div>;
   }
 
-  const initials = doctor.name.split(" ").slice(1).map((n: string) => n[0]).join("") || "DR";
+  const initials = doctor.name.split(" ").filter((n: string) => n !== "Dr." && n !== "Dr").map((n: string) => n[0]).join("") || "DR";
+  const backendUrl = "http://localhost:5050";
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -88,8 +89,12 @@ const DoctorProfile = () => {
           <div className="lg:col-span-2 space-y-6">
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
               <div className="flex flex-col sm:flex-row gap-6">
-                <div className="w-24 h-24 rounded-2xl gradient-primary flex items-center justify-center text-primary-foreground font-bold text-2xl shrink-0">
-                  {initials}
+                <div className="w-24 h-24 rounded-2xl overflow-hidden gradient-primary flex items-center justify-center text-primary-foreground font-bold text-2xl shrink-0">
+                  {doctor.image ? (
+                    <img src={`${backendUrl}${doctor.image}`} alt={doctor.name} className="w-full h-full object-cover" />
+                  ) : (
+                    initials
+                  )}
                 </div>
                 <div className="flex-1">
                   <h1 className="text-2xl font-bold text-foreground">{doctor.name}</h1>

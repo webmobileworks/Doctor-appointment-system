@@ -11,7 +11,8 @@ interface DoctorCardProps {
 }
 
 const DoctorCard = ({ doctor, index = 0, layout = "grid" }: DoctorCardProps) => {
-  const initials = doctor.name.split(" ").slice(1).map(n => n[0]).join("");
+  const initials = doctor.name.split(" ").filter(n => n !== "Dr." && n !== "Dr").map(n => n[0]).join("");
+  const backendUrl = "http://localhost:5050";
 
   if (layout === "list") {
     return (
@@ -22,8 +23,12 @@ const DoctorCard = ({ doctor, index = 0, layout = "grid" }: DoctorCardProps) => 
         className="glass-card-hover p-5"
       >
         <div className="flex flex-col sm:flex-row gap-5">
-          <div className="w-20 h-20 rounded-2xl gradient-primary flex items-center justify-center text-primary-foreground font-bold text-xl shrink-0">
-            {initials}
+          <div className="w-20 h-20 rounded-2xl overflow-hidden gradient-primary flex items-center justify-center text-primary-foreground font-bold text-xl shrink-0">
+            {doctor.image ? (
+              <img src={`${backendUrl}${doctor.image}`} alt={doctor.name} className="w-full h-full object-cover" />
+            ) : (
+              initials
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
@@ -57,8 +62,12 @@ const DoctorCard = ({ doctor, index = 0, layout = "grid" }: DoctorCardProps) => 
       className="glass-card-hover p-5 flex flex-col"
     >
       <div className="flex items-center gap-4 mb-4">
-        <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center text-primary-foreground font-bold text-lg">
-          {initials}
+        <div className="w-16 h-16 rounded-2xl overflow-hidden gradient-primary flex items-center justify-center text-primary-foreground font-bold text-lg shrink-0">
+          {doctor.image ? (
+            <img src={`${backendUrl}${doctor.image}`} alt={doctor.name} className="w-full h-full object-cover" />
+          ) : (
+            initials
+          )}
         </div>
         <div className="min-w-0">
           <h3 className="font-semibold text-foreground truncate">{doctor.name}</h3>
