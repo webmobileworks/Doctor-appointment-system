@@ -33,7 +33,7 @@ const navItems = [
 const DoctorDashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
-  
+
   // Prescription Form States
   const [selectedApt, setSelectedApt] = useState("");
   const [notes, setNotes] = useState("");
@@ -181,17 +181,17 @@ const DoctorDashboard = () => {
           {activeTab === "appointments" && <AppointmentsView appointments={appointments} statusMutation={updateStatusMutation} />}
           {activeTab === "consultation" && <DoctorConsultationView profile={profile} />}
           {activeTab === 'prescriptions' && (
-                  <PrescriptionUploadView 
-                    appointments={appointments} 
-                    uploadMutation={uploadPrescriptionMutation} 
-                    selectedApt={selectedApt}
-                    setSelectedApt={setSelectedApt}
-                    notes={notes}
-                    setNotes={setNotes}
-                    file={file}
-                    setFile={setFile}
-                  />
-                )}
+            <PrescriptionUploadView
+              appointments={appointments}
+              uploadMutation={uploadPrescriptionMutation}
+              selectedApt={selectedApt}
+              setSelectedApt={setSelectedApt}
+              notes={notes}
+              setNotes={setNotes}
+              file={file}
+              setFile={setFile}
+            />
+          )}
           {activeTab === "settings" && <SettingsView />}
         </div>
       </main>
@@ -298,7 +298,7 @@ const ProfileView = ({ profile, updateMutation, specialties }: any) => {
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl space-y-6">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className=" space-y-6">
       {/* Photo Section */}
       <div className="glass-card p-6">
         <h3 className="font-semibold mb-5 flex items-center gap-2">
@@ -692,7 +692,7 @@ const DoctorConsultationView = ({ profile }: any) => {
 
   useEffect(() => {
     if (!activeChat || !profile || !socket) return;
-    
+
     const fetchMessages = async () => {
       try {
         const res = await api.get(`/messages/${activeChat._id}`);
@@ -710,7 +710,7 @@ const DoctorConsultationView = ({ profile }: any) => {
 
   const send = () => {
     if (!input.trim() || !socket || !activeChat || !profile) return;
-    
+
     const user1 = profile._id.toString();
     const user2 = activeChat._id.toString();
     const consultationId = [user1, user2].sort().join('_');
@@ -729,7 +729,7 @@ const DoctorConsultationView = ({ profile }: any) => {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-[calc(100vh-8rem)] glass-card overflow-hidden">
-      
+
       {/* Sidebar: Chat List */}
       <div className="w-80 border-r border-border/50 flex flex-col bg-card/50 shrink-0">
         <div className="p-4 border-b border-border/50 bg-muted/20">
@@ -737,18 +737,18 @@ const DoctorConsultationView = ({ profile }: any) => {
         </div>
         <div className="flex-1 overflow-y-auto">
           {conversations.length === 0 && (
-             <p className="p-4 text-xs text-muted-foreground text-center">No active chats.</p>
+            <p className="p-4 text-xs text-muted-foreground text-center">No active chats.</p>
           )}
           {conversations.map(c => (
-             <div key={c._id} onClick={() => setActiveChat(c)} className={`p-4 flex gap-3 cursor-pointer transition-colors border-b border-border/50 ${activeChat?._id === c._id ? 'bg-primary/10 border-l-4 border-l-primary' : 'hover:bg-muted/50 border-l-4 border-l-transparent'}`}>
-               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg shrink-0">
-                  {c.name[0]}
-               </div>
-               <div className="flex-1 min-w-0 flex flex-col justify-center">
-                 <h4 className="font-semibold text-sm truncate">{c.name}</h4>
-                 <p className="text-xs text-muted-foreground truncate mt-0.5">{c.lastMessage || "Start chatting..."}</p>
-               </div>
-             </div>
+            <div key={c._id} onClick={() => setActiveChat(c)} className={`p-4 flex gap-3 cursor-pointer transition-colors border-b border-border/50 ${activeChat?._id === c._id ? 'bg-primary/10 border-l-4 border-l-primary' : 'hover:bg-muted/50 border-l-4 border-l-transparent'}`}>
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg shrink-0">
+                {c.name[0]}
+              </div>
+              <div className="flex-1 min-w-0 flex flex-col justify-center">
+                <h4 className="font-semibold text-sm truncate">{c.name}</h4>
+                <p className="text-xs text-muted-foreground truncate mt-0.5">{c.lastMessage || "Start chatting..."}</p>
+              </div>
+            </div>
           ))}
         </div>
       </div>
@@ -779,7 +779,7 @@ const DoctorConsultationView = ({ profile }: any) => {
                       }`}>
                       <p className="text-sm leading-relaxed">{msg.text}</p>
                       <p className={`text-[10px] mt-1.5 text-right ${isMe ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                        {msg.time || new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' })}
+                        {msg.time || new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
                   </div>
@@ -796,11 +796,11 @@ const DoctorConsultationView = ({ profile }: any) => {
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground bg-muted/5">
-             <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-               <MessageSquare className="w-8 h-8 text-primary" />
-             </div>
-             <p className="font-semibold text-foreground">Your Messages</p>
-             <p className="text-sm mt-1">Select a chat from the sidebar to start consulting.</p>
+            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <MessageSquare className="w-8 h-8 text-primary" />
+            </div>
+            <p className="font-semibold text-foreground">Your Messages</p>
+            <p className="text-sm mt-1">Select a chat from the sidebar to start consulting.</p>
           </div>
         )}
       </div>
