@@ -298,50 +298,81 @@ const ProfileView = ({ profile, updateMutation, specialties }: any) => {
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl space-y-6">
-      <div className="glass-card p-6 space-y-5">
-        <h3 className="font-semibold">Profile Information</h3>
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-20 h-20 rounded-2xl flex items-center justify-center font-bold text-xl overflow-hidden relative">
-            {preview ? (
-              <img src={preview.startsWith('blob:') ? preview : `http://localhost:5050${profile.doctorDetails.image}`} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full gradient-primary flex items-center justify-center text-primary-foreground">
-                {profile.name[0]}
-              </div>
-            )}
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl space-y-6">
+      {/* Photo Section */}
+      <div className="glass-card p-6">
+        <h3 className="font-semibold mb-5 flex items-center gap-2">
+          <User className="w-4 h-4 text-primary" /> Profile Information
+        </h3>
+        <div className="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-2xl bg-muted/20">
+          <div className="relative group">
+            <div className="w-24 h-24 rounded-2xl flex items-center justify-center font-bold text-xl overflow-hidden ring-4 ring-primary/10 shadow-lg">
+              {preview ? (
+                <img src={preview.startsWith('blob:') ? preview : `http://localhost:5050${profile.doctorDetails.image}`} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full gradient-primary flex items-center justify-center text-primary-foreground text-2xl">
+                  {profile.name[0]}
+                </div>
+              )}
+            </div>
+            <div className="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+              <span className="text-white text-xs font-medium">Change</span>
+            </div>
           </div>
-          <div className="relative">
-            <input type="file" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" />
-            <Button variant="outline" size="sm" className="rounded-xl pointer-events-none">Change Photo</Button>
+          <div className="text-center sm:text-left">
+            <p className="font-semibold">{profile.name}</p>
+            <p className="text-sm text-muted-foreground">{profile.doctorDetails?.specialty || "Doctor"}</p>
+            <div className="relative mt-2">
+              <input type="file" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" />
+              <Button variant="outline" size="sm" className="rounded-xl pointer-events-none gap-1.5 text-xs">
+                <Upload className="w-3 h-3" /> Change Photo
+              </Button>
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* Form */}
+      <div className="glass-card p-6 space-y-5">
+        <h3 className="font-semibold flex items-center gap-2">
+          <Settings className="w-4 h-4 text-primary" /> Edit Details
+        </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div><label className="text-xs text-muted-foreground">Full Name</label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="mt-1 rounded-xl" /></div>
-          <div>
-            <label className="text-xs text-muted-foreground">Specialty</label>
-            <Select 
-              value={form.specialty} 
-              onValueChange={(value) => setForm({ ...form, specialty: value })}
-            >
-              <SelectTrigger className="mt-1 rounded-xl h-11">
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground font-medium">Full Name</label>
+            <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="rounded-xl h-11" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground font-medium">Specialty</label>
+            <Select value={form.specialty} onValueChange={(value) => setForm({ ...form, specialty: value })}>
+              <SelectTrigger className="rounded-xl h-11">
                 <SelectValue placeholder="Select Specialty" />
               </SelectTrigger>
               <SelectContent>
                 {specialties.map((spec: any) => (
-                  <SelectItem key={spec._id || spec.name} value={spec.name}>
-                    {spec.name}
-                  </SelectItem>
+                  <SelectItem key={spec._id || spec.name} value={spec.name}>{spec.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <div><label className="text-xs text-muted-foreground">Experience (Years)</label><Input type="number" value={form.experience} onChange={e => setForm({ ...form, experience: e.target.value })} className="mt-1 rounded-xl" /></div>
-          <div><label className="text-xs text-muted-foreground">Fees (₹)</label><Input type="number" value={form.fees} onChange={e => setForm({ ...form, fees: e.target.value })} className="mt-1 rounded-xl" /></div>
-          <div className="sm:col-span-2"><label className="text-xs text-muted-foreground">Qualification</label><Input value={form.qualification} onChange={e => setForm({ ...form, qualification: e.target.value })} className="mt-1 rounded-xl" /></div>
-          <div className="sm:col-span-2"><label className="text-xs text-muted-foreground">About</label><Textarea value={form.about} onChange={e => setForm({ ...form, about: e.target.value })} className="mt-1 rounded-xl" /></div>
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground font-medium">Experience (Years)</label>
+            <Input type="number" value={form.experience} onChange={e => setForm({ ...form, experience: e.target.value })} className="rounded-xl h-11" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground font-medium">Fees (₹)</label>
+            <Input type="number" value={form.fees} onChange={e => setForm({ ...form, fees: e.target.value })} className="rounded-xl h-11" />
+          </div>
+          <div className="sm:col-span-2 space-y-1.5">
+            <label className="text-xs text-muted-foreground font-medium">Qualification</label>
+            <Input value={form.qualification} onChange={e => setForm({ ...form, qualification: e.target.value })} className="rounded-xl h-11" />
+          </div>
+          <div className="sm:col-span-2 space-y-1.5">
+            <label className="text-xs text-muted-foreground font-medium">About</label>
+            <Textarea value={form.about} onChange={e => setForm({ ...form, about: e.target.value })} className="rounded-xl min-h-[120px] resize-none" placeholder="Tell patients about yourself..." />
+          </div>
         </div>
-        <Button onClick={handleSave} disabled={updateMutation.isPending} className="rounded-xl gradient-primary border-0 text-primary-foreground gap-2">
+        <Button onClick={handleSave} disabled={updateMutation.isPending} className="rounded-xl gradient-primary border-0 text-primary-foreground gap-2 h-11 px-6 shadow-md">
           <Save className="w-4 h-4" /> {updateMutation.isPending ? "Saving..." : "Save Changes"}
         </Button>
       </div>
@@ -467,71 +498,123 @@ const AppointmentsView = ({ appointments, statusMutation }: any) => (
 );
 
 const PrescriptionUploadView = ({ appointments, uploadMutation, selectedApt, setSelectedApt, notes, setNotes, file, setFile }: any) => {
-  // Show only confirmed and completed
   const eligible = appointments.filter((a: any) => a.status === 'confirmed' || a.status === 'completed');
+  const uploaded = appointments.filter((a: any) => a.prescriptionFile);
 
   const handleUpload = () => {
     const formData = new FormData();
     if (file) formData.append('prescription', file);
     if (notes) formData.append('diagnosis', notes);
-
     uploadMutation.mutate({ id: selectedApt, formData });
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl space-y-6">
-      <div className="glass-card p-6 space-y-5">
-        <h3 className="font-semibold">Upload Prescription</h3>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      {/* Stats Row */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: "Eligible Sessions", value: eligible.length, icon: Users, color: "text-primary bg-primary/10" },
+          { label: "Uploaded", value: uploaded.length, icon: FileText, color: "text-success bg-success/10" },
+          { label: "Pending", value: eligible.length - uploaded.length, icon: Clock, color: "text-warning bg-warning/10" },
+        ].map((s) => (
+          <div key={s.label} className="glass-card p-4 text-center">
+            <div className={`w-9 h-9 rounded-xl ${s.color} flex items-center justify-center mx-auto mb-2`}>
+              <s.icon className="w-4 h-4" />
+            </div>
+            <p className="text-xl font-bold">{s.value}</p>
+            <p className="text-[11px] text-muted-foreground">{s.label}</p>
+          </div>
+        ))}
+      </div>
 
-        <div>
-          <label className="text-xs text-muted-foreground mb-1 block">Select Patient Session</label>
-          <select
-            className="w-full h-11 px-3 rounded-xl border border-input bg-background"
-            value={selectedApt}
-            onChange={(e) => setSelectedApt(e.target.value)}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Upload Form */}
+        <div className="glass-card p-6 space-y-5">
+          <h3 className="font-semibold flex items-center gap-2">
+            <Upload className="w-4 h-4 text-primary" /> Upload Prescription
+          </h3>
+
+          <div>
+            <label className="text-xs text-muted-foreground mb-1.5 block font-medium">Select Patient Session</label>
+            <Select value={selectedApt} onValueChange={setSelectedApt}>
+              <SelectTrigger className="rounded-xl h-11">
+                <SelectValue placeholder="Select an appointment..." />
+              </SelectTrigger>
+              <SelectContent>
+                {eligible.map((apt: any) => (
+                  <SelectItem key={apt._id} value={apt._id}>
+                    {apt.patient?.name || "Unknown"} — {apt.date}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <label className="text-xs text-muted-foreground block mb-1.5 font-medium">Diagnosis Notes (Optional)</label>
+            <Textarea
+              value={notes} onChange={(e) => setNotes(e.target.value)}
+              placeholder="Summary of diagnosis, medicines prescribed..."
+              className="rounded-xl min-h-[120px] resize-none"
+            />
+          </div>
+
+          <div className={`border-2 border-dashed rounded-2xl p-8 text-center relative overflow-hidden transition-all cursor-pointer ${file ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/30"}`}>
+            <input
+              type="file"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              onChange={(e) => e.target.files && setFile(e.target.files[0])}
+              accept=".pdf,.jpg,.jpeg,.png"
+            />
+            <div className={`w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center ${file ? "bg-primary/10" : "bg-muted/50"}`}>
+              <Upload className={`w-6 h-6 ${file ? 'text-primary' : 'text-muted-foreground'}`} />
+            </div>
+            {file ? (
+              <>
+                <p className="text-sm font-semibold text-primary">{file.name}</p>
+                <p className="text-xs text-muted-foreground mt-1">Click to change file</p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-medium text-foreground">Click to browse or drag file here</p>
+                <p className="text-xs text-muted-foreground mt-1">PDF, JPG up to 10MB</p>
+              </>
+            )}
+          </div>
+
+          <Button
+            onClick={handleUpload}
+            disabled={uploadMutation.isPending || !file || !selectedApt}
+            className="rounded-xl gradient-primary border-0 text-primary-foreground gap-2 w-full h-11 text-sm font-semibold shadow-md"
           >
-            <option value="">Select an appointment...</option>
-            {eligible.map((apt: any) => (
-              <option key={apt._id} value={apt._id}>
-                {apt.patient?.name} - {apt.date}
-              </option>
-            ))}
-          </select>
+            <Plus className="w-4 h-4" /> {uploadMutation.isPending ? "Uploading..." : "Upload Prescription"}
+          </Button>
         </div>
 
-        <div>
-          <label className="text-xs text-muted-foreground block mb-1">Diagnosis Notes (Optional)</label>
-          <Textarea
-            value={notes} onChange={(e) => setNotes(e.target.value)}
-            placeholder="Summary of diagnosis..." className="rounded-xl min-h-[100px]"
-          />
+        {/* Recent Uploads */}
+        <div className="glass-card p-6">
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <FileText className="w-4 h-4 text-primary" /> Recent Uploads
+          </h3>
+          <div className="space-y-3">
+            {uploaded.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">No prescriptions uploaded yet.</p>
+            ) : (
+              uploaded.slice(0, 5).map((apt: any) => (
+                <div key={apt._id} className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 hover:bg-muted/40 transition-colors">
+                  <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success shrink-0">
+                    <CheckCircle className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{apt.patient?.name || "Unknown"}</p>
+                    <p className="text-xs text-muted-foreground">{apt.date}</p>
+                  </div>
+                  <span className="text-[10px] uppercase font-semibold text-success bg-success/10 px-2 py-1 rounded-md">Done</span>
+                </div>
+              ))
+            )}
+          </div>
         </div>
-
-        <div className="border-2 border-dashed border-primary/40 bg-primary/5 rounded-xl p-8 text-center relative overflow-hidden transition-colors hover:border-primary">
-          <input
-            type="file"
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            onChange={(e) => e.target.files && setFile(e.target.files[0])}
-            accept=".pdf,.jpg,.jpeg,.png"
-          />
-          <Upload className={`w-8 h-8 mx-auto mb-3 ${file ? 'text-primary' : 'text-muted-foreground'}`} />
-          {file ? (
-            <p className="text-sm font-medium text-primary">Selected: {file.name}</p>
-          ) : (
-            <>
-              <p className="text-sm text-foreground">Click to browse or drag file here</p>
-              <p className="text-xs text-muted-foreground mt-1">PDF, JPG up to 10MB</p>
-            </>
-          )}
-        </div>
-
-        <Button
-          onClick={handleUpload}
-          disabled={uploadMutation.isPending || !file || !selectedApt}
-          className="rounded-xl gradient-primary border-0 text-primary-foreground gap-2 w-full md:w-auto"
-        >
-          <Plus className="w-4 h-4" /> {uploadMutation.isPending ? "Uploading..." : "Upload Prescription"}
-        </Button>
       </div>
     </motion.div>
   );
