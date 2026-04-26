@@ -17,12 +17,14 @@ const userSchema = new mongoose.Schema({
   role: {
     type: String,
     enum: ['patient', 'doctor', 'admin'],
-    default: 'patient'
+    default: 'patient',
+    index: true
   },
   status: {
     type: String,
     enum: ['active', 'inactive', 'suspended'],
-    default: 'active'
+    default: 'active',
+    index: true
   },
   name: {
     type: String,
@@ -34,7 +36,7 @@ const userSchema = new mongoose.Schema({
   
   // Doctor specific fields
   doctorDetails: {
-    specialty: String,
+    specialty: { type: String, index: true },
     experience: Number,
     rating: { type: Number, default: 0 },
     reviewCount: { type: Number, default: 0 },

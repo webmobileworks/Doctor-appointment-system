@@ -4,16 +4,19 @@ const appointmentSchema = new mongoose.Schema({
   patient: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: true,
+    index: true
   },
   doctor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: true,
+    index: true
   },
   date: {
     type: String,
-    required: true
+    required: true,
+    index: true
   },
   time: {
     type: String,
@@ -22,7 +25,8 @@ const appointmentSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: ['pending', 'confirmed', 'completed', 'cancelled', 'rejected'],
-    default: 'pending'
+    default: 'pending',
+    index: true
   },
   type: {
     type: String,
