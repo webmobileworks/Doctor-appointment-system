@@ -9,6 +9,11 @@ import Navbar from "@/components/layout/Navbar";
 
 import api from "@/lib/api";
 
+
+
+
+
+
 const ConsultationPage = () => {
   const [profile, setProfile] = useState<any>(null);
   const [conversations, setConversations] = useState<any[]>([]);
